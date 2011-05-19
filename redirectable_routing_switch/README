@@ -29,6 +29,6 @@ example, you can monitor traffic coming from unauthorized hosts.
 # How to run
 
   $ cd trema
-  $ sudo ./trema run -c ../rectable_routing_switch.conf
+  $ sudo ./trema run -c ../redirectable_routing_switch.conf
 
 Enjoy!
