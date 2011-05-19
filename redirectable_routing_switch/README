@@ -7,7 +7,7 @@ WE STRONGLY DO NOT RECOMMEND YOU TO RUN THIS APPLICATION.
 
 This directory includes an OpenFlow controller that emulates a single
 large layer 2 switch consists of arbitrary number of OpenFlow switches
-with a redirection functions. The redirection function allows us to
+with a redirection function. The redirection function allows us to
 redirect traffic coming from unauthorized hosts to be redirected to
 controller's local IP protocol stack. By redirecting traffic, for
 example, you can monitor traffic coming from unauthorized hosts.
