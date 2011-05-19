@@ -1,0 +1,34 @@
+Redirectable routing switch
+===========================
+
+REDIRECTABLE ROUTING SWITCH IS AN EXPERIMENTAL IMPLEMENTATION AND
+MAY NOT BE FULLY FUNCTIONAL. IF YOU ARE NOT FAMILIAR WITH C AND SQL,
+WE STRONGLY DO NOT RECOMMEND YOU TO RUN THIS APPLICATION.
+
+This directory includes an OpenFlow controller that emulates a single
+large layer 2 switch consists of arbitrary number of OpenFlow switches
+with a redirection functions. The redirection function allows us to
+redirect traffic coming from unauthorized hosts to be redirected to
+controller's local IP protocol stack. By redirecting traffic, for
+example, you can monitor traffic coming from unauthorized hosts.
+
+# How to build
+
+  Build Trema first
+  $ git clone git://github.com/trema/trema.git trema
+  $ cd trema
+  $ ./build.rb
+  $ cd ..
+
+  Build redirectable routing switch and create authorized host database
+  $ make
+  $ ./create_authorized_host_db.sh
+  $ sqlite3 ./authorized_host.db
+  (Add authorized hosts manually...)
+
+# How to run
+
+  $ cd trema
+  $ sudo ./trema run -c ../rectable_routing_switch.conf
+
+Enjoy!
