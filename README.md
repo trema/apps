@@ -33,6 +33,6 @@ Redirectable Routing Switch
 License & Terms
 ===============
 
-Each software found in this directory are distributed under the terms
+Each software found in this directory is distributed under the terms
 and conditions described in the document of the software. Please
 carefully check the document before you build/run the software.
