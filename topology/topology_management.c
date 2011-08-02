@@ -26,131 +26,25 @@
 #include "topology_management.h"
 
 
-#ifdef UNIT_TESTING
-
-#ifdef get_transaction_id
-#undef get_transaction_id
-#endif
-#define get_transaction_id mock_get_transaction_id
-uint32_t mock_get_transaction_id( void );
-
-#ifdef create_features_request
-#undef create_features_request
-#endif
-#define create_features_request mock_create_features_request
-buffer *mock_create_features_request( const uint32_t transaction_id );
-
-#ifdef send_openflow_message
-#undef send_openflow_message
-#endif
-#define send_openflow_message mock_send_openflow_message
-bool mock_send_openflow_message( const uint64_t datapath_id, buffer *message );
-
-#ifdef update_port_entry
-#undef update_port_entry
-#endif
-#define update_port_entry mock_update_port_entry
-port_entry *mock_update_port_entry( sw_entry *sw, uint16_t port_no, const char *name );
-
-#ifdef notify_port_status_for_all_user
-#undef notify_port_status_for_all_user
-#endif
-#define notify_port_status_for_all_user mock_notify_port_status_for_all_user
-void mock_notify_port_status_for_all_user( port_entry *port );
-
-#ifdef notify_link_status_for_all_user
-#undef notify_link_status_for_all_user
-#endif
-#define notify_link_status_for_all_user mock_notify_link_status_for_all_user
-void mock_notify_link_status_for_all_user( port_entry *port );
-
-#ifdef delete_link_to
-#undef delete_link_to
-#endif
-#define delete_link_to mock_delete_link_to
-void mock_delete_link_to( port_entry *port );
-
-#ifdef delete_port_entry
-#undef delete_port_entry
-#endif
-#define delete_port_entry mock_delete_port_entry
-void mock_delete_port_entry( sw_entry *sw, port_entry *port );
-
-#ifdef update_sw_entry
-#undef update_sw_entry
-#endif
-#define update_sw_entry mock_update_sw_entry
-sw_entry *mock_update_sw_entry( uint64_t *datapath_id );
-
-#ifdef lookup_sw_entry
-#undef lookup_sw_entry
-#endif
-#define lookup_sw_entry mock_lookup_sw_entry
-sw_entry *mock_lookup_sw_entry( uint64_t *datapath_id );
-
-#ifdef delete_sw_entry
-#undef delete_sw_entry
-#endif
-#define delete_sw_entry mock_delete_sw_entry
-void delete_sw_entry( sw_entry *sw );
-
-
-#ifdef lookup_port_entry
-#undef lookup_port_entry
-#endif
-#define lookup_port_entry mock_lookup_port_entry
-port_entry *mock_lookup_port_entry( sw_entry *sw, uint16_t port_no, const char *name );
-
-#ifdef get_trema_name
-#undef get_trema_name
-#endif
-#define get_trema_name mock_get_trema_name
-const char *mock_get_trema_name( void );
-
-#ifdef init_openflow_application_interface
-#undef init_openflow_application_interface
-#endif
-#define init_openflow_application_interface mock_init_openflow_application_interface
-bool mock_init_openflow_application_interface( const char *custom_service_name );
-
-#ifdef set_switch_ready_handler
-#undef set_switch_ready_handler
-#endif
-#define set_switch_ready_handler mock_set_switch_ready_handler
-bool mock_set_switch_ready_handler( switch_ready_handler callback, void *user_data );
-
-#ifdef set_switch_disconnected_handler
-#undef set_switch_disconnected_handler
-#endif
-#define set_switch_disconnected_handler mock_set_switch_disconnected_handler
-bool mock_set_switch_disconnected_handler( switch_disconnected_handler callback, void *user_data );
-
-#ifdef set_features_reply_handler
-#undef set_features_reply_handler
-#endif
-#define set_features_reply_handler mock_set_features_reply_handler
-bool mock_set_features_reply_handler( features_reply_handler callback, void *user_data );
-
-#ifdef set_port_status_handler
-#undef set_port_status_handler
-#endif
-#define set_port_status_handler mock_set_port_status_handler
-bool mock_set_port_status_handler( port_status_handler callback, void *user_data );
-
-#define static
-
-#endif  // UNIT_TESTING
-
-
 static const uint16_t INITIAL_DISCOVERY_PERIOD = 5;
+static topology_management_options options;
 
 
 static void
 send_flow_mod_receiving_lldp( sw_entry *sw, uint16_t hard_timeout, uint16_t priority ) {
   struct ofp_match match;
   memset( &match, 0, sizeof( struct ofp_match ) );
-  match.wildcards = ( OFPFW_ALL & ~OFPFW_DL_TYPE );
-  match.dl_type = ETH_ETHTYPE_LLDP;
+  if ( !options.lldp_over_ip ) {
+    match.wildcards = OFPFW_ALL & ~OFPFW_DL_TYPE;
+    match.dl_type = ETH_ETHTYPE_LLDP;
+  }
+  else {
+    match.wildcards = OFPFW_ALL & ~( OFPFW_DL_TYPE | OFPFW_NW_PROTO | OFPFW_NW_SRC_MASK | OFPFW_NW_DST_MASK );
+    match.dl_type = ETH_ETHTYPE_IPV4;
+    match.nw_proto = 99;
+    match.nw_src = options.lldp_ip_src;
+    match.nw_dst = options.lldp_ip_dst;
+  }
 
   openflow_actions *actions = create_actions();
   const uint16_t max_len = UINT16_MAX;
@@ -403,6 +297,14 @@ port_status( uint64_t datapath_id, uint32_t transaction_id, uint8_t reason,
             reason, datapath_id );
       return;
   }
+}
+
+
+bool
+init_topology_management( topology_management_options new_options ) {
+  options = new_options;
+
+  return true;
 }
 
 

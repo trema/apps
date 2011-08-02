@@ -23,13 +23,6 @@
 #include "topology_table.h"
 
 
-#ifdef UNIT_TESTING
-
-#define static
-
-#endif // UNIT_TESTING
-
-
 static list_element *sw_table;
 
 

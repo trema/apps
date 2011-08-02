@@ -18,8 +18,12 @@
  */
 
 
-#include <stdio.h>
+#include <assert.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <getopt.h>
+#include <stdio.h>
 #include "trema.h"
 #include "libtopology.h"
 #include "topology_service_interface_option_parser.h"
@@ -27,19 +31,29 @@
 #include "probe_timer_table.h"
 
 
-#ifdef UNIT_TESTING
-
-#define static
-#define main topology_discovery_main
-
-#endif // UNIT_TESTING
-
-
 static bool response_all_port_status_down = false;
+
+
+static char option_description[] = "  -i, --lldp_over_ip          Send LLDP messages over IP\n"
+                                   "  -o, --lldp_ip_src=IP_ADDR   Source IP address for sending LLDP over IP\n"
+                                   "  -r, --lldp_ip_dst=IP_ADDR   Destination IP address for sending LLDP over IP\n";
+static char short_options[] = "io:r:";
+static struct option long_options[] = {
+  { "lldp_over_ip", no_argument, NULL, 'i' },
+  { "lldp_ip_src", required_argument, NULL, 'o' },
+  { "lldp_ip_dst", required_argument, NULL, 'r' },
+  { NULL, 0, NULL, 0  },
+};
+
+
+typedef struct {
+  lldp_options lldp;
+} topology_discovery_options;
+
 
 void
 usage( void ) {
-  topology_service_interface_usage( get_executable_name(), "topology discovery", NULL );
+  topology_service_interface_usage( get_executable_name(), "topology discovery", option_description );
 }
 
 
@@ -91,13 +105,122 @@ subscribe_topology_response( void *user_data ) {
 }
 
 
+static void
+reset_getopt() {
+  optind = 0;
+  opterr = 1;
+}
+
+
+static bool
+set_ip_address_from_string( uint32_t *address, const char *string ) {
+  assert( address != NULL );
+  assert( string != NULL );
+
+  struct in_addr addr;
+
+  if ( inet_aton( string, &addr ) == 0 ) {
+    error( "Invalid IP address specified." );
+    return false;
+  }
+
+  *address = ntohl( addr.s_addr );
+
+  return true;
+}
+
+
+static void
+parse_options( topology_discovery_options *options, int *argc, char **argv[] ) {
+  assert( options != NULL );
+  assert( argc != NULL );
+  assert( *argc >= 0 );
+  assert( argv != NULL );
+
+  int argc_tmp = *argc;
+  char *new_argv[ *argc ];
+
+  for ( int i = 0; i <= *argc; ++i ) {
+    new_argv[ i ] = ( *argv )[ i ];
+  }
+
+  options->lldp.lldp_over_ip = false;
+  options->lldp.lldp_ip_src = 0;
+  options->lldp.lldp_ip_dst = 0;
+
+  int c;
+  while ( ( c = getopt_long( *argc, *argv, short_options, long_options, NULL ) ) != -1 ) {
+    switch ( c ) {
+      case 'i':
+        debug( "Enabling LLDP over IP" );
+        options->lldp.lldp_over_ip = true;
+        break;
+
+      case 'o':
+        if ( set_ip_address_from_string( &options->lldp.lldp_ip_src, optarg ) == false ) {
+          usage();
+          exit( EXIT_FAILURE );
+          return;
+        }
+        info( "%s ( %#x ) is used as source address for sending LLDP over IP.", optarg, options->lldp.lldp_ip_src );
+        break;
+
+      case 'r':
+        if ( set_ip_address_from_string( &options->lldp.lldp_ip_dst, optarg ) == false ) {
+          usage();
+          exit( EXIT_FAILURE );
+          return;
+        }
+        info( "%s ( %#x ) is used as destination address for sending LLDP over IP.", optarg, options->lldp.lldp_ip_dst );
+        break;
+
+      default:
+        continue;
+    }
+
+    if ( optarg == 0 || strchr( new_argv[ optind - 1 ], '=' ) != NULL ) {
+      argc_tmp -= 1;
+      new_argv[ optind - 1 ] = NULL;
+    }
+    else {
+      argc_tmp -= 2;
+      new_argv[ optind - 1 ] = NULL;
+      new_argv[ optind - 2 ] = NULL;
+    }
+  }
+
+  if ( options->lldp.lldp_over_ip == true && ( options->lldp.lldp_ip_src == 0 || options->lldp.lldp_ip_dst == 0 ) ) {
+    printf( "-o and -r options are mandatory." );
+    usage();
+    exit( EXIT_FAILURE );
+    return;
+  }
+
+  for ( int i = 0, j = 0; i < *argc; ++i ) {
+    if ( new_argv[ i ] != NULL ) {
+      ( *argv )[ j ] = new_argv[ i ];
+      j++;
+    }
+  }
+
+  ( *argv )[ *argc ] = NULL;
+  *argc = argc_tmp;
+
+  reset_getopt();
+}
+
+
 int
 main( int argc, char *argv[] ) {
+  topology_discovery_options options;
+
   init_trema( &argc, &argv );
+  parse_options( &options, &argc, &argv );
   init_topology_service_interface_options( &argc, &argv );
   init_probe_timer_table();
   init_libtopology( get_topology_service_interface_name() );
-  init_lldp();
+
+  init_lldp( options.lldp );
   subscribe_topology( subscribe_topology_response, NULL );
 
   start_trema();

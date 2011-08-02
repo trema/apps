@@ -84,6 +84,7 @@ print_with_dsl_format( void *param, size_t entries, const topology_link_status *
 
   for ( i = 0; i < entries; i++ ) {
     if ( s[ i ].status != TD_LINK_UP ) {
+      debug( "link down" );
       continue;
     }
 

@@ -22,13 +22,6 @@
 #include "subscriber_table.h"
 
 
-#ifdef UNIT_TESTING
-
-#define static
-
-#endif // UNIT_TESTING
-
-
 static list_element *subscriber_table;
 
 

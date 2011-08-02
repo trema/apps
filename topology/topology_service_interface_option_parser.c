@@ -24,13 +24,6 @@
 #include "topology_service_interface_option_parser.h"
 
 
-#ifdef UNIT_TESTING
-
-#define static
-
-#endif // UNIT_TESTING
-
-
 static struct options {
   char *name;
 } options;

@@ -101,24 +101,16 @@ struct tlv {
 };
 
 
+typedef struct {
+  bool lldp_over_ip;
+  uint32_t lldp_ip_src;
+  uint32_t lldp_ip_dst;
+} lldp_options;
+
+
 bool send_lldp( probe_timer_entry *port );
-bool init_lldp( void );
+bool init_lldp( lldp_options options );
 bool finalize_lldp( void );
-
-#ifdef UNIT_TESTING
-
-void _handle_packet_in( uint64_t datapath_id,
-                        uint32_t transaction_id,
-                        uint32_t buffer_id,
-                        uint16_t total_len,
-                        uint16_t in_port,
-                        uint8_t reason,
-                        const buffer *m,
-                        void *user_data );
-buffer *_create_lldp_frame( const uint8_t *mac, uint64_t dpid,
-                            uint16_t port_no );
-
-#endif
 
 
 #endif // LLDP_H

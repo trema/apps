@@ -27,13 +27,6 @@
 #include "probe_timer_table.h"
 
 
-#ifdef UNIT_TESTING
-
-#define static
-
-#endif // UNIT_TESTING
-
-
 dlist_element *probe_timer_table;
 dlist_element *probe_timer_last;
 

@@ -28,105 +28,17 @@
 #include "lldp.h"
 
 
-#ifdef UNIT_TESTING
-
-#ifdef create_link
-#undef create_link
-#endif
-#define create_link mock_create_link
-struct link *mock_create_link( uint64_t from_dpid, uint16_t from_port_no, uint64_t to_dpid, uint16_t to_port_no, uint32_t link_speed );
-
-#ifdef die
-#undef die
-#endif
-#define die mock_die
-void mock_die( const char *err, ... );
-
-#ifdef info
-#undef info
-#endif
-#define info mock_info
-void mock_info( const char *format, ... );
-
-#ifdef warn
-#undef warn
-#endif
-#define warn mock_warn
-void mock_warn( const char *format, ... );
-
-#ifdef notice
-#undef notice
-#endif
-#define notice mock_notice
-void mock_notice( const char *format, ... );
-
-#ifdef create_actions
-#undef create_actions
-#endif
-#define create_actions mock_create_actions
-openflow_actions *mock_create_actions( void );
-
-#ifdef append_action_output
-#undef append_action_output
-#endif
-#define append_action_output mock_append_action_output
-bool mock_append_action_output( openflow_actions *actions, const uint16_t port, const uint16_t max_len );
-
-#ifdef get_transaction_id
-#undef get_transaction_id
-#endif
-#define get_transaction_id mock_get_transaction_id
-uint32_t mock_get_transaction_id( void );
-
-#ifdef create_packet_out
-#undef create_packet_out
-#endif
-#define create_packet_out mock_create_packet_out
-buffer * create_packet_out( const uint32_t transaction_id,
-                            const uint32_t buffer_id,
-                            const uint16_t in_port,
-                            const openflow_actions *actions,
-                            const buffer *data );
-
-#ifdef send_openflow_message
-#undef send_openflow_message
-#endif
-#define send_openflow_message mock_send_openflow_message
-bool mock_send_openflow_message( const uint64_t datapath_id, buffer *message );
-
-#ifdef lookup_mac
-#undef lookup_mac
-#endif
-#define lookup_mac mock_lookup_mac
-struct port *mock_lookup_mac( uint8_t *mac );
-
-#ifdef lookup_port
-#undef lookup_port
-#endif
-#define lookup_port mock_lookup_port
-struct port *mock_lookup_port( uint64_t dpid, uint16_t port_no );
-
-#ifdef create_link
-#undef create_link
-#endif
-#define create_link mock_create_link
-struct link *mock_create_link( uint64_t from_dpid, uint16_t from_port_no, uint64_t to_dpid, uint16_t to_port_no, uint32_t link_speed );
-
-#ifdef set_packet_in_handler
-#undef set_packet_in_handler
-#endif
-#define set_packet_in_handler mock_set_packet_in_handler
-bool mock_set_packet_in_handler( packet_in_handler callback, void *user_data );
-
-#endif // UNIT_TESTING
-
 static int recv_lldp( uint64_t *dpid, uint16_t *port, const buffer *buf );
 static buffer *create_lldp_frame( const uint8_t *mac, uint64_t dpid,
                                   uint16_t port_no );
 static int parse_lldp_ull( void *str, uint64_t *value, uint32_t len );
 static int parse_lldp_us( void *str, uint16_t *value, uint32_t len );
 
-static const uint16_t ethtype = ETH_ETHTYPE_LLDP;
+static uint16_t lldp_ethtype = ETH_ETHTYPE_LLDP;
+static bool lldp_over_ip = false;
+static uint8_t lldp_default_dst[ ETH_ADDRLEN ] = { 0x01, 0x80, 0xc2, 0x00, 0x00, 0x0e };
+static uint32_t lldp_ip_src = 0;
+static uint32_t lldp_ip_dst = 0;
 
 
 bool
@@ -173,6 +85,8 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
   uint32_t len = 0;
   uint8_t subtype = 0;
 
+  info( "Receiving LLDP frame." );
+
   lldp_frame = packet_info( buf )->l2_data.eth;
   remain_len = buf->length;
 
@@ -181,7 +95,18 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
   }
 
   remain_len -= ( sizeof( ether_header_t ) - ETH_PREPADLEN );
-  lldp_tlv = packet_info( buf )->l3_data.l3;
+
+  if ( packet_info( buf )->ethtype == ETH_ETHTYPE_LLDP ) {
+    lldp_tlv = packet_info( buf )->l3_data.l3;
+  }
+  else if ( packet_info( buf )->ethtype == ETH_ETHTYPE_IPV4 ) {
+    remain_len -= sizeof( ipv4_header_t );
+    lldp_tlv = packet_info( buf )->l4_data.l4;
+  }
+  else {
+    error( "Unsupported ether type ( %#x ).", packet_info( buf )->ethtype );
+    return -1;
+  }
 
   do {
     if ( remain_len < LLDP_TLV_HEAD_LEN ) {
@@ -210,8 +135,7 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
       lldp_du += LLDP_SUBTYPE_LEN;
       switch ( subtype ) {
       case CHASSIS_ID_SUBTYPE_LOCALLY_ASSINED:
-        ret = parse_lldp_ull( lldp_du, dpid,
-                              ( len - LLDP_SUBTYPE_LEN ) );
+        ret = parse_lldp_ull( lldp_du, dpid, len - LLDP_SUBTYPE_LEN );
         if ( ret < 0 ) {
           info( "Failed to parse dpid." );
           return -1;
@@ -228,8 +152,7 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
       lldp_du += LLDP_SUBTYPE_LEN;
       switch ( subtype ) {
       case PORT_ID_SUBTYPE_LOCALLY_ASSINED:
-        ret = parse_lldp_us( lldp_du, port_no,
-                             ( len - LLDP_SUBTYPE_LEN ) );
+        ret = parse_lldp_us( lldp_du, port_no, len - LLDP_SUBTYPE_LEN );
         if ( ret < 0 ) {
           info( "Failed to parse port_no." );
           return -1;
@@ -245,7 +168,7 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
       break;
 
     default:
-      info( "Unknown LLDP type (%#x).", type );
+      warn( "Unknown LLDP type (%#x).", type );
       return -1;
     }
 
@@ -260,7 +183,9 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
 static buffer *
 create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   buffer *lldp_buf;
+  size_t lldp_buf_len = 0;
   ether_header_t *ether;
+  ipv4_header_t *ip;
 
   struct tlv *chassis_id_tlv;
   uint32_t chassis_id_tlv_len = 0;
@@ -275,41 +200,58 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   char port_no_str[ LLDP_TLV_INFO_MAX_LEN ];
   uint16_t *ttl_val;
 
-  const uint8_t lldp_multicast[ ETH_ADDRLEN ] = { 0x01, 0x80, 0xc2, 0x00, 0x00, 0x0e };
-
-  debug( "Create LLDP Frame." );
+  debug( "Creating LLDP Frame." );
 
   // Convert Chassis ID into string
-  chassis_id_strlen =
-    ( uint32_t )snprintf( dpid_str, ( LLDP_TLV_INFO_MAX_LEN - 1 ),
-                          "%#" PRIx64, dpid );
+  chassis_id_strlen = ( uint32_t ) snprintf( dpid_str, ( LLDP_TLV_INFO_MAX_LEN - 1 ), "%#" PRIx64, dpid );
 
   assert ( chassis_id_strlen <= ( LLDP_TLV_INFO_MAX_LEN - 1 ) );
 
   chassis_id_tlv_len = LLDP_TLV_HEAD_LEN + LLDP_SUBTYPE_LEN + chassis_id_strlen;
 
   // Convert Port ID into string
-  port_id_strlen =
-    ( uint32_t )snprintf( port_no_str, ( LLDP_TLV_INFO_MAX_LEN - 1 ),
-                          "%d", port_no );
+  port_id_strlen = ( uint32_t ) snprintf( port_no_str, ( LLDP_TLV_INFO_MAX_LEN - 1 ), "%d", port_no );
   assert ( port_id_strlen <= ( LLDP_TLV_INFO_MAX_LEN - 1 ) );
   port_id_tlv_len = LLDP_TLV_HEAD_LEN + LLDP_SUBTYPE_LEN + port_id_strlen;
 
-  lldp_buf = alloc_buffer_with_length(
-    sizeof( struct ofp_packet_out )
-    + sizeof( struct ofp_action_output ) * 64
-    + sizeof( ether_header_t ) +
-    + chassis_id_tlv_len
-    + port_id_tlv_len
-    + LLDP_TTL_LEN
-    + LLDP_END_PDU_LEN );
+  lldp_buf_len = sizeof( ether_header_t ) + chassis_id_tlv_len + port_id_tlv_len
+    + LLDP_TTL_LEN + LLDP_END_PDU_LEN;
+
+  if ( lldp_over_ip ) {
+    lldp_buf_len += sizeof( ipv4_header_t );
+  }
+
+  lldp_buf = alloc_buffer_with_length( lldp_buf_len );
 
   // Create ether frame header
   ether = append_back_buffer( lldp_buf, sizeof( ether_header_t ) );
   remove_front_buffer( lldp_buf, sizeof( ether->prepad ) );
-  memcpy( ether->macda, lldp_multicast, ETH_ADDRLEN );
+  if ( !lldp_over_ip ) {
+    memcpy( ether->macda, lldp_default_dst, ETH_ADDRLEN );
+  }
+  else {
+    memset( ether->macda, 0xff, ETH_ADDRLEN );
+  }
   memcpy( ether->macsa, mac, ETH_ADDRLEN );
-  ether->type = htons( ethtype );
+
+  if ( lldp_over_ip ) {
+    lldp_ethtype = ETH_ETHTYPE_IPV4;
+  }
+
+  ether->type = htons( lldp_ethtype );
+
+  if ( lldp_over_ip ) {
+    ip = append_back_buffer( lldp_buf, sizeof( ipv4_header_t ) );
+    memset( ip, 0, sizeof( ipv4_header_t ) );
+    ip->ihl = 5;
+    ip->version = 4;
+    ip->ttl = 1;
+    ip->protocol = 99;
+    ip->tot_len = htons( ( uint16_t ) ( lldp_buf_len - sizeof( ether_header_t ) ) );
+    ip->saddr = htonl( lldp_ip_src );
+    ip->daddr = htonl( lldp_ip_dst );
+    ip->check = get_checksum( ( uint16_t * ) ip, sizeof( ipv4_header_t ) );
+  }
 
   // Create Chassis ID TLV 
   chassis_id_tlv = append_back_buffer( lldp_buf, chassis_id_tlv_len );
@@ -337,19 +279,10 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   end_tlv = append_back_buffer( lldp_buf, LLDP_END_PDU_LEN );
   end_tlv->type_len = LLDP_TL( LLDP_TYPE_END, LLDP_TLV_HEAD_LEN );
 
-  void *appended_buffer = append_back_buffer( lldp_buf, 128 );
-  memset( appended_buffer, 0, 128 );
+  fill_ether_padding( lldp_buf );
 
   return lldp_buf;
 }
-
-
-#ifdef UNIT_TESTING
-buffer *
-_create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
-  return create_lldp_frame( mac, dpid, port_no );
-}
-#endif // UNIT_TESTING
 
 
 static int
@@ -410,8 +343,8 @@ handle_packet_in( uint64_t dst_datapath_id,
   uint16_t type = ntohs( packet_info( m )->l2_data.eth->type );
 
   // check if LLDP or not
-  if ( type != ETH_ETHTYPE_LLDP ) {
-    notice( "not LLDP: %x", type );
+  if ( type != lldp_ethtype ) {
+    notice( "Non-LLDP packet is received ( type = %#x ).", type );
     return;
   }
 
@@ -435,34 +368,16 @@ handle_packet_in( uint64_t dst_datapath_id,
 }
 
 
-#ifdef UNIT_TESTING
-void
-_handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
-                   uint32_t buffer_id, uint16_t total_len,
-                   uint16_t in_port, uint8_t reason,
-                   const buffer *m, void *user_data ) {
-  handle_packet_in( datapath_id, transaction_id,
-                    buffer_id, total_len, in_port, reason, m, user_data );
-}
-#endif // UNIT_TESTING
-
-
 bool
-init_lldp() {
-#ifdef UNIT_TESTING
-#define handle_packet_in _handle_packet_in
-#endif
+init_lldp( lldp_options options ) {
+  lldp_over_ip = options.lldp_over_ip;
+  lldp_ip_src = options.lldp_ip_src;
+  lldp_ip_dst = options.lldp_ip_dst;
 
-  // set packet-in handler
   init_openflow_application_interface( get_trema_name() );
-  debug( "lldp service name: %s", get_trema_name() );
   set_packet_in_handler( handle_packet_in, NULL );
 
   return true;
-
-#ifdef UNIT_TESTING
-#undef handle_packet_in
-#endif
 }
 
 
