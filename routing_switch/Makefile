@@ -5,7 +5,7 @@
 TREMA = ../../trema
 
 CC = gcc
-CFLAGS = $(shell $(TREMA)/trema-config --cflags) -I../topology -std=gnu99 -D_GNU_SOURCE -Wall
+CFLAGS = $(shell $(TREMA)/trema-config --cflags) -I../topology -g -std=gnu99 -D_GNU_SOURCE -fno-strict-aliasing -Werror -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith
 LDFLAGS = $(shell $(TREMA)/trema-config --libs) -L../topology -ltopology
 
 TARGET = routing_switch
