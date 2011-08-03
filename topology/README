@@ -8,7 +8,6 @@ components:
   switches. Topology discovery uses Link Layer Discovery Protocol
   (LLDP) to obtain topology information.
 
-
              packet out
          .---------------------------------------.
          v                                       |
@@ -24,3 +23,18 @@ components:
 | openflow |     |               `------------------------------->| topology  |
 |  switch  |     `------------------------------------------------| discovery |
 +----------+                         packet out(LLDP)             +-----------+
+
+- LLDP is transported over Ethernet by default but it also can be
+  transported over IP. If you enable the LLDP over IP function,
+  packetin_filter.diff should be applied to the original packet-in
+  filter.
+
+  $ cd trema/src/packetin_filter
+  $ patch < ../../../apps/topology/packetin_filter.diff
+  $ cd ../..
+  $ ./build.rb packetin_filter
+
+- "show_topology" retrieves topology information from the topology
+  daemon and prints it as graph-easy or trema network DSL style.
+
+  $ TREMA_HOME=../../trema ./show_topology -G | graph-easy
