@@ -164,6 +164,8 @@ send_packet( uint16_t destination_port, uint64_t datapath_id, uint32_t buffer_id
 }
 
 
+static uint16_t output_port = 2;
+
 static void
 handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
                   uint32_t buffer_id, uint16_t total_len,
@@ -172,6 +174,43 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
   UNUSED( transaction_id );
   UNUSED( total_len );
   UNUSED( reason );
+
+  if ( packet_info( data )->ethtype == ETH_ETHTYPE_IPV4 &&
+       ntohl( packet_info( data )->l3_data.ipv4->daddr ) == 0x01010101 ) {
+
+    struct ofp_match match;
+    set_match_from_packet( &match, in_port, 0, data );
+
+    openflow_actions *actions = create_actions();
+    append_action_output( actions, output_port, UINT16_MAX );
+
+    buffer *flow_mod = create_flow_mod(
+      get_transaction_id(),
+      match,
+      get_cookie(),
+      OFPFC_ADD,
+      60,
+      0,
+      UINT16_MAX,
+      buffer_id,
+      OFPP_NONE,
+      OFPFF_SEND_FLOW_REM,
+      actions
+    );
+
+    send_openflow_message( datapath_id, flow_mod );
+    free_buffer( flow_mod );
+    delete_actions( actions );
+
+    if ( output_port == 2 ) {
+      output_port = 3;
+    }
+    else {
+      output_port = 2;
+    }
+
+    return;
+  }
 
   struct key new_key;
   memcpy( new_key.mac, packet_info( data )->l2_data.eth->macsa, OFP_ETH_ALEN );
