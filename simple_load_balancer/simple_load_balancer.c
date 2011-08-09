@@ -1,7 +1,5 @@
 /*
- * Simple learning switch application.
- *
- * Author: Yasuhito Takamiya <yasuhito@gmail.com>
+ * Simple server load balancer application (NOT FULLY IMPLEMENTED YET)
  *
  * Copyright (C) 2008-2011 NEC Corporation
  *
