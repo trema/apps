@@ -202,6 +202,37 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
     free_buffer( flow_mod );
     delete_actions( actions );
 
+    struct ofp_match match2; 
+    memset( &match2, 0 , sizeof( match2 ) );
+    match2.in_port = output_port;
+    memcpy( match2.dl_src, match.dl_dst, ETH_ADDRLEN );
+    memcpy( match2.dl_dst, match.dl_src, ETH_ADDRLEN );
+    match2.nw_src = match.nw_dst;
+    match2.nw_dst = match.nw_src;
+    match2.tp_src = match.tp_dst;
+    match2.tp_dst = match.tp_src;
+
+    actions = create_actions();
+    append_action_output( actions, in_port, UINT16_MAX );
+
+    flow_mod = create_flow_mod(
+      get_transaction_id(),
+      match2,
+      get_cookie(),
+      OFPFC_ADD,
+      60,
+      0,
+      UINT16_MAX,
+      UINT32_MAX,
+      OFPP_NONE,
+      OFPFF_SEND_FLOW_REM,
+      actions
+    );
+
+    send_openflow_message( datapath_id, flow_mod );
+    free_buffer( flow_mod );
+    delete_actions( actions );
+
     if ( output_port == 2 ) {
       output_port = 3;
     }
