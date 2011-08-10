@@ -26,6 +26,7 @@
 #include <arpa/inet.h>
 #include <getopt.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -145,7 +146,7 @@ resolve_path_replied( void *user_data, dlist_element *hops ) {
   original_packet->user_data = NULL;
   if ( !parse_packet( original_packet ) ) {
     warn( "Received unsupported packet" );
-    free_packet( original_packet );
+    free_buffer( original_packet );
     free_hop_list( hops );
     xfree( param );
     return;
@@ -167,7 +168,7 @@ resolve_path_replied( void *user_data, dlist_element *hops ) {
 
   // free them
   free_hop_list( hops );
-  free_packet( original_packet );
+  free_buffer( original_packet );
   xfree( param );
 }
 
