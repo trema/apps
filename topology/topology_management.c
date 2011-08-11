@@ -20,6 +20,7 @@
 
 #include <inttypes.h>
 #include <openflow.h>
+#include "etherip.h"
 #include "trema.h"
 #include "topology_table.h"
 #include "service_management.h"
@@ -41,7 +42,7 @@ send_flow_mod_receiving_lldp( sw_entry *sw, uint16_t hard_timeout, uint16_t prio
   else {
     match.wildcards = OFPFW_ALL & ~( OFPFW_DL_TYPE | OFPFW_NW_PROTO | OFPFW_NW_SRC_MASK | OFPFW_NW_DST_MASK );
     match.dl_type = ETH_ETHTYPE_IPV4;
-    match.nw_proto = 99;
+    match.nw_proto = IPPROTO_ETHERIP;
     match.nw_src = options.lldp_ip_src;
     match.nw_dst = options.lldp_ip_dst;
   }

@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include "etherip.h"
 #include "trema.h"
 #include "probe_timer_table.h"
 #include "lldp.h"
@@ -55,8 +56,6 @@ send_lldp( probe_timer_entry *port ) {
   }
 
   uint32_t transaction_id = get_transaction_id();
-
-  fill_ether_padding( lldp );
 
   buffer *packetout = create_packet_out( transaction_id, UINT32_MAX,
                                          OFPP_NONE, actions, lldp );
@@ -100,8 +99,8 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
     lldp_tlv = packet_info( buf )->l3_data.l3;
   }
   else if ( packet_info( buf )->ethtype == ETH_ETHTYPE_IPV4 ) {
-    remain_len -= sizeof( ipv4_header_t );
-    lldp_tlv = packet_info( buf )->l4_data.l4;
+    remain_len -= sizeof( ipv4_header_t ) + sizeof( etherip_header ) + sizeof( ether_header_t ) - ETH_PREPADLEN;
+    lldp_tlv = ( uint16_t * ) ( ( char * ) packet_info( buf )->l4_data.l4 + sizeof( etherip_header ) + sizeof( ether_header_t ) - ETH_PREPADLEN );
   }
   else {
     error( "Unsupported ether type ( %#x ).", packet_info( buf )->ethtype );
@@ -218,7 +217,7 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
     + LLDP_TTL_LEN + LLDP_END_PDU_LEN;
 
   if ( lldp_over_ip ) {
-    lldp_buf_len += sizeof( ipv4_header_t );
+    lldp_buf_len += sizeof( ipv4_header_t ) + sizeof( etherip_header ) + sizeof( ether_header_t ) - ETH_PREPADLEN;
   }
 
   lldp_buf = alloc_buffer_with_length( lldp_buf_len );
@@ -246,11 +245,16 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
     ip->ihl = 5;
     ip->version = 4;
     ip->ttl = 1;
-    ip->protocol = 99;
+    ip->protocol = IPPROTO_ETHERIP;
     ip->tot_len = htons( ( uint16_t ) ( lldp_buf_len - sizeof( ether_header_t ) ) );
     ip->saddr = htonl( lldp_ip_src );
     ip->daddr = htonl( lldp_ip_dst );
-    ip->check = get_checksum( ( uint16_t * ) ip, sizeof( ipv4_header_t ) );
+    etherip_header *etherip = append_back_buffer( lldp_buf, sizeof( etherip_header ) );
+    etherip->version = htons( ETHERIP_VERSION );
+    ether_header_t *eth = ( ether_header_t * ) ( ( char * ) append_back_buffer( lldp_buf, sizeof( ether_header_t ) - ETH_PREPADLEN ) - ETH_PREPADLEN );
+    memcpy( eth->macda, lldp_default_dst, ETH_ADDRLEN );
+    memcpy( eth->macsa, mac, ETH_ADDRLEN );
+    eth->type = htons( ETH_ETHTYPE_LLDP );
   }
 
   // Create Chassis ID TLV 
@@ -279,7 +283,11 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   end_tlv = append_back_buffer( lldp_buf, LLDP_END_PDU_LEN );
   end_tlv->type_len = LLDP_TL( LLDP_TYPE_END, LLDP_TLV_HEAD_LEN );
 
-  fill_ether_padding( lldp_buf );
+  uint16_t padding_length = fill_ether_padding( lldp_buf );
+  if ( lldp_over_ip ) {
+    ip->tot_len = htons( ( uint16_t ) (ntohs( ip->tot_len ) + padding_length ) );
+    ip->check = get_checksum( ( uint16_t * ) ip, sizeof( ipv4_header_t ) );
+  }
 
   return lldp_buf;
 }
