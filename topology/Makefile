@@ -3,6 +3,8 @@
 #
 
 TREMA = ../../trema
+GEM_BIN = /var/lib/gems/1.8/bin
+SHEL = /bin/sh
 
 CC = gcc
 AR = ar
@@ -33,6 +35,8 @@ TARGETS = $(TARGET_LIB) $(TARGET_TOPOLOGY) $(TARGET_DISCOVERY) $(TARGET_SHOW)
 SRCS = $(SRCS_LIB) $(SRCS_TOPOLOGY) $(SRCS_DISCOVERY) $(SRCS_SHOW)
 OBJS = $(OBJS_LIB) $(OBJS_TOPOLOGY) $(OBJS_DISCOVERY) $(OBJS_SHOW)
 
+FEATURES = topology.feature
+
 DEPENDS = .depends
 
 .PHONY: all clean
@@ -62,5 +66,14 @@ depend:
 
 clean:
 	@rm -rf $(DEPENDS) $(OBJS) $(TARGETS) *~
+
+run_acceptance_test:
+	@for feature in $(FEATURES); do \
+	  ( \
+	    file=`pwd`/$$feature; \
+	    cd ${TREMA}; \
+	    ${GEM_BIN}/cucumber -r features $$file; \
+	  ) \
+	done
 
 -include $(DEPENDS)

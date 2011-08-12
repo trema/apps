@@ -3,6 +3,8 @@
 #
 
 TREMA = ../../trema
+GEM_BIN = /var/lib/gems/1.8/bin
+SHEL = /bin/sh
 
 CC = gcc
 CFLAGS = $(shell $(TREMA)/trema-config --cflags) -I../topology -g -std=gnu99 -D_GNU_SOURCE -fno-strict-aliasing -Werror -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith
@@ -11,6 +13,8 @@ LDFLAGS = $(shell $(TREMA)/trema-config --libs) -L../topology -ltopology
 TARGET = routing_switch
 SRCS = fdb.c libpathresolver.c port.c routing_switch.c
 OBJS = $(SRCS:.c=.o)
+
+FEATURES = routing_switch.feature
 
 DEPENDS = .depends
 
@@ -31,5 +35,14 @@ depend:
 
 clean:
 	@rm -rf $(DEPENDS) $(OBJS) $(TARGET) *~
+
+run_acceptance_test:
+	@for feature in $(FEATURES); do \
+	  ( \
+	    file=`pwd`/$$feature; \
+	    cd ${TREMA}; \
+	    ${GEM_BIN}/cucumber -r features $$file; \
+	  ) \
+	done
 
 -include $(DEPENDS)
