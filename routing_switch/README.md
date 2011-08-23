@@ -4,48 +4,52 @@ Routing switch
 This directory includes an OpenFlow controller that emulates a layer 2
 switch.
 
-             packet out
-         .---------------------------------------.
-         v                                       |
-+----------+           +-----------+           +---------+          +----------+
-|  switch  |  *    1   | packet in |  1    *   | routing |  *   1   | topology |
-|  daemon  | --------> |  filter   | --------> | switch  | <------> | daemon   |
-+----------+ packet in +-----------+ packet in +---------+ topology +----------+
-  ^ 1    ^                       |                                    ^ 1
-  |      |                       |                                    | topology
-  |      `-------.               |                                    |
-  v 1            |               |                                    v 1
-+----------+     |               |   packet in(LLDP)                +-----------+
-| openflow |     |               `--------------------------------->| topology  |
-|  switch  |     `--------------------------------------------------| discovery |
-+----------+                         packet out(LLDP)               +-----------+
+                     packet out
+                 .---------------------------------------.
+                 v                                       |
+        +----------+           +-----------+           +---------+          +----------+
+        |  switch  |  *    1   | packet in |  1    *   | routing |  *   1   | topology |
+        |  daemon  | --------> |  filter   | --------> | switch  | <------> | daemon   |
+        +----------+ packet in +-----------+ packet in +---------+ topology +----------+
+          ^ 1    ^                       |                                    ^ 1
+          |      |                       |                                    | topology
+          |      `-------.               |                                    |
+          v 1            |               |                                    v 1
+        +----------+     |               |   packet in(LLDP)                +-----------+
+        | openflow |     |               `--------------------------------->| topology  |
+        |  switch  |     `--------------------------------------------------| discovery |
+        +----------+                         packet out(LLDP)               +-----------+
 
 
 * How to build
 
   Get Trema and Apps
-  $ git clone git://github.com/trema/trema.git trema
-  $ git clone git://github.com/trema/apps.git apps
+
+        $ git clone git://github.com/trema/trema.git trema
+        $ git clone git://github.com/trema/apps.git apps
 
   Build Trema first
-  $ cd trema
-  $ ./build.rb
-  $ cd ..
+
+        $ cd trema
+        $ ./build.rb
+        $ cd ..
 
   Build topology
-  $ cd apps/topology
-  $ make
-  $ cd ../..
+
+        $ cd apps/topology
+        $ make
+        $ cd ../..
 
   Build Routing switch
-  $ cd apps/routing_switch
-  $ make
-  $ cd ../..
+
+        $ cd apps/routing_switch
+        $ make
+        $ cd ../..
 
 * How to run
 
-  $ cd trema
-  $ sudo ./trema run -c ../apps/routing_switch/routing_switch.conf
+        $ cd trema
+        $ sudo ./trema run -c ../apps/routing_switch/routing_switch.conf
 
 * License & Terms
 

@@ -18,32 +18,36 @@ combining this application and iptables.
 * How to build
 
   Get Trema and Apps
-  $ git clone git://github.com/trema/trema.git trema
-  $ git clone git://github.com/trema/apps.git apps
+
+        $ git clone git://github.com/trema/trema.git trema
+        $ git clone git://github.com/trema/apps.git apps
 
   Build Trema first
-  $ cd trema
-  $ ./build.rb
-  $ cd ..
+
+        $ cd trema
+        $ ./build.rb
+        $ cd ..
 
   Build redirectable routing switch and create authorized host database
-  $ sudo apt-get install sqlite3 libsqlite3-dev
-  $ cd apps/redirectable_routing_switch
-  $ make
-  $ ./create_authorized_host_db.sh
-  $ sqlite3 ./authorized_host.db
+
+        $ sudo apt-get install sqlite3 libsqlite3-dev
+        $ cd apps/redirectable_routing_switch
+        $ make
+        $ ./create_authorized_host_db.sh
+        $ sqlite3 ./authorized_host.db
 
   Add authorized hosts (mac address and description pairs) manually
-  sqlite> insert into authorized_host values (1,"alice's PC");
-  sqlite> insert into authorized_host values (2,"bob's PC");
-  sqlite> .quit
 
-  $ cd ../..
+        sqlite> insert into authorized_host values (1,"alice's PC");
+        sqlite> insert into authorized_host values (2,"bob's PC");
+        sqlite> .quit
+
+        $ cd ../..
 
 * How to run
 
-  $ cd trema
-  $ sudo ./trema run -c ../apps/redirectable_routing_switch/redirectable_routing_switch.conf
+        $ cd trema
+        $ sudo ./trema run -c ../apps/redirectable_routing_switch/redirectable_routing_switch.conf
 
 * License & Terms
 

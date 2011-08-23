@@ -11,21 +11,21 @@ components:
   switches. Topology discovery uses Link Layer Discovery Protocol
   (LLDP) to obtain topology information.
 
-             packet out
-         .---------------------------------------.
-         v                                       |
-+----------+           +-----------+           +-------+          +----------+
-|  switch  |  *    1   | packet in |  1    *   | trema |  *   1   | topology |
-|  daemon  | --------> |  filter   | --------> | apps  | <------> | daemon   |
-+----------+ packet in +-----------+ packet in +-------+ topology +----------+
-  ^ 1    ^                       |                                  ^ 1
-  |      |                       |                                  | topology
-  |      `-------.               |                                  |
-  v 1            |               |                                  v 1
-+----------+     |               |   packet in(LLDP)              +-----------+
-| openflow |     |               `------------------------------->| topology  |
-|  switch  |     `------------------------------------------------| discovery |
-+----------+                         packet out(LLDP)             +-----------+
+                     packet out
+                 .---------------------------------------.
+                 v                                       |
+        +----------+           +-----------+           +-------+          +----------+
+        |  switch  |  *    1   | packet in |  1    *   | trema |  *   1   | topology |
+        |  daemon  | --------> |  filter   | --------> | apps  | <------> | daemon   |
+        +----------+ packet in +-----------+ packet in +-------+ topology +----------+
+          ^ 1    ^                       |                                  ^ 1
+          |      |                       |                                  | topology
+          |      `-------.               |                                  |
+          v 1            |               |                                  v 1
+        +----------+     |               |   packet in(LLDP)              +-----------+
+        | openflow |     |               `------------------------------->| topology  |
+        |  switch  |     `------------------------------------------------| discovery |
+        +----------+                         packet out(LLDP)             +-----------+
 
 - LLDP is transported over Ethernet by default but it also can be
   transported over IP.
@@ -33,11 +33,11 @@ components:
 - "show_topology" retrieves topology information from the topology
   daemon and prints it as graph-easy or trema network DSL style.
 
-  $ TREMA_HOME=../../trema ./show_topology -G | graph-easy
+        $ TREMA_HOME=../../trema ./show_topology -G | graph-easy
 
 * How to build
 
-  Please see ../routing_switch/README
+  Please see `../routing_switch/README`
 
 * License & Terms
 
