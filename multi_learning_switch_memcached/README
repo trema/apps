@@ -5,39 +5,46 @@ This directory includes an OpenFlow controller that emulates multiple
 layer 2 switches.
 
 Use memcached to forwarding database,
-otherwise same as trema/src/src/examples/multi_learning_switch(Ruby version).
+otherwise same as `trema/src/src/examples/multi_learning_switch`(Ruby version).
 
 * Requirements
 
-  - memcached (http://memcached.org/)
-  - ruby memcache-client (http://seattlerb.rubyforge.org/memcache-client/)
+  - Memcached <http://memcached.org/>
+  - Ruby memcache-client <http://seattlerb.rubyforge.org/memcache-client/>
 
   if you are using Ubuntu linux. you can install them as follows:
+
     Memcached
-      $ sudo apt-get install memcached
+
+        $ sudo apt-get install memcached
 
     Ruby memcache-client
-      $ sudo gem install memcache-client
+
+        $ sudo gem install memcache-client
 
 * How to build
 
   Get Trema and Apps
-  $ git clone git://github.com/trema/trema.git trema
-  $ git clone git://github.com/trema/apps.git apps
+
+        $ git clone git://github.com/trema/trema.git trema
+        $ git clone git://github.com/trema/apps.git apps
 
   Build Trema
-  $ cd trema
-  $ ./build.rb
-  $ cd ..
+
+        $ cd trema
+        $ ./build.rb
+        $ cd ..
 
 * How to run
 
   Memcached
-  $ sudo /etc/init.d/memcached start
+
+        $ sudo /etc/init.d/memcached start
 
   Multi learning switch
-  $ cd trema
-  $ sudo ./trema run -c ../apps/multi_learning_switch_memcached/multi-learning-switch.rb
+
+        $ cd trema
+        $ sudo ./trema run -c ../apps/multi_learning_switch_memcached/multi-learning-switch.rb
 
 * License & Terms
 

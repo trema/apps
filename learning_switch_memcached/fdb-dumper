@@ -1,6 +1,23 @@
 #! /usr/bin/env ruby
 #
-# dump forwarding database
+# Forwarding database dumper
+#
+# Author: Kazushi SUGYO
+#
+# Copyright (C) 2008-2011 NEC Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 2, as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
 
@@ -8,7 +25,11 @@ require 'rubygems'
 require 'memcache'
 
 
-class DumpFdb < MemCache
+#
+# Forwarding database dumper class
+#
+class FDBDumper < MemCache
+  # returns slabs statistics for each memcached server
   def slabs server
     stats = {}
     with_socket_management(server) do | socket |
@@ -16,12 +37,12 @@ class DumpFdb < MemCache
       while line = socket.gets do
         raise_on_error_response! line
         break if line == "END\r\n"
-        if line =~ /\ASTAT ((\d+):)?([\S]+) (\d+)/ then
+        if line =~ /\ASTAT ((\d+):)?([\S]+) (\d+)/
           id, name, value = $2, $3, $4
-          if id.nil? then
+          if id.nil?
             stats[name] = value.to_i
           else
-            if stats[id.to_i].nil? then
+            if stats[id.to_i].nil?
               stats[id.to_i] = {}
             end
             stats[id.to_i][name] = value.to_i
@@ -33,6 +54,7 @@ class DumpFdb < MemCache
   end
 
 
+  # returns cacedump for each memcached server
   def cachedump server, slab_id, count
     keys = {}
     with_socket_management(server) do | socket |
@@ -40,7 +62,7 @@ class DumpFdb < MemCache
       while line = socket.gets do
         raise_on_error_response! line
         break if line == "END\r\n"
-        if line =~ /\AITEM (.+) \[(\d+) b; ([\d]+) s\]/ then
+        if line =~ /\AITEM (.+) \[(\d+) b; ([\d]+) s\]/
           key, expiry = $1, $3.to_i
           keys[key] = expiry
         end
@@ -50,6 +72,7 @@ class DumpFdb < MemCache
   end
 
 
+  # display forwarding database
   def dump_all
     servers.each do | server |
       slabs(server).each do | id, value |
@@ -64,6 +87,7 @@ class DumpFdb < MemCache
   end
 
 
+  # display memcached statistics
   def stats_all
     server_stats = stats
     server_stats.each do | key, stats |
@@ -75,6 +99,7 @@ class DumpFdb < MemCache
   end
 
 
+  # flush data stored in memcached
   def flush_all
     servers.each do | server |
       with_socket_management(server) do | socket |
@@ -89,12 +114,19 @@ class DumpFdb < MemCache
 end
 
 
-fdb = DumpFdb.new '127.0.0.1:11211'
+fdb = FDBDumper.new '127.0.0.1:11211'
 command = ARGV.shift
-if command == "stats" then
+if command == "stats"
   fdb.stats_all
-elsif command == "flush" then
+elsif command == "flush"
   fdb.flush_all
 else
   fdb.dump_all
 end
+
+
+### Local variables:
+### mode: Ruby
+### coding: utf-8
+### indent-tabs-mode: nil
+### End:

@@ -5,42 +5,50 @@ This directory includes an OpenFlow controller that controls a single
 OpenFlow switch and emulates a layer 2 switch.
 
 Use memcached to forwarding database,
-otherwise same as trema/src/src/examples/learning_switch(Ruby version).
+otherwise same as `trema/src/src/examples/learning_switch`(Ruby version).
 
 * Requirements
 
-  - memcached (http://memcached.org/)
-  - ruby memcache-client (http://seattlerb.rubyforge.org/memcache-client/)
+  - Memcached <http://memcached.org/>
+  - Ruby memcache-client <http://seattlerb.rubyforge.org/memcache-client/>
 
   if you are using Ubuntu linux. you can install them as follows:
+
     Memcached
-      $ sudo apt-get install memcached
+
+        $ sudo apt-get install memcached
 
     Ruby memcache-client
-      $ sudo gem install memcache-client
+
+        $ sudo gem install memcache-client
 
 * How to build
 
   Get Trema and Apps
-  $ git clone git://github.com/trema/trema.git trema
-  $ git clone git://github.com/trema/apps.git apps
+
+        $ git clone git://github.com/trema/trema.git trema
+        $ git clone git://github.com/trema/apps.git apps
 
   Build Trema
-  $ cd trema
-  $ ./build.rb
-  $ cd ..
+
+        $ cd trema
+        $ ./build.rb
+        $ cd ..
 
 * How to run
 
   Memcached
-  $ sudo /etc/init.d/memcached start
+
+        $ sudo /etc/init.d/memcached start
 
   Learning switch
-  $ cd trema
-  $ sudo ./trema run -c ../apps/learning_switch_memcached/learning-switch.rb
+
+        $ cd trema
+        $ sudo ./trema run -c ../apps/learning_switch_memcached/learning-switch.rb
 
   Forwarding database dumper
-  $ ./dump-fdb 
+
+        $ ./fdb-dumper
 
 * License & Terms
 

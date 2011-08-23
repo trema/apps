@@ -29,7 +29,7 @@
 $LOAD_PATH << "../apps/learning_switch_memcached/"
 
 
-require "forwarding-db"
+require "fdb"
 
 
 #
@@ -40,7 +40,7 @@ class MultiLearningSwitch < Trema::Controller
 
   def start
     @fdbs = Hash.new do | hash, datapath_id |
-      hash[ datapath_id ] = ForwardingDB.new datapath_id.to_s
+      hash[ datapath_id ] = FDB.new datapath_id.to_s
     end
   end
 

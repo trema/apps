@@ -26,7 +26,7 @@
 #
 
 
-require "forwarding-db"
+require "fdb"
 
 
 #
@@ -34,7 +34,7 @@ require "forwarding-db"
 #
 class LearningSwitch < Trema::Controller
   def start
-    @fdb = ForwardingDB.new
+    @fdb = FDB.new
   end
 
 
