@@ -24,9 +24,11 @@ Meta
 Authors
 =======
 
-Redirectable Routing Switch
----------------------------
+Please keep the list sorted.
 
+* Kazushi Sugyo
+* Shuji Ishii
+* Yasuhito Takamiya <yasuhito@gmail.com>
 * Yasunobu Chiba
 
 
