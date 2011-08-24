@@ -32,4 +32,6 @@ depend:
 clean:
 	@rm -rf $(DEPENDS) $(OBJS) $(TARGET) *~
 
+run_acceptance_test:
+
 -include $(DEPENDS)

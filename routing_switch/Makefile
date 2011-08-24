@@ -3,8 +3,8 @@
 #
 
 TREMA = ../../trema
-GEM_BIN = /var/lib/gems/1.8/bin
-SHEL = /bin/sh
+GEM_BIN = `ruby -e 'require "rubygems"; puts Gem::bindir'`
+SHELL = /bin/sh
 
 CC = gcc
 CFLAGS = $(shell $(TREMA)/trema-config --cflags) -I../topology -g -std=gnu99 -D_GNU_SOURCE -fno-strict-aliasing -Werror -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith

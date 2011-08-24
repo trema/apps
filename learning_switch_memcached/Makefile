@@ -3,7 +3,7 @@
 #
 
 TREMA = ../../trema
-GEM_BIN = /var/lib/gems/1.8/bin
+GEM_BIN = `ruby -e 'require "rubygems"; puts Gem::bindir'`
 SHEL = /bin/sh
 
 FEATURES = learning_switch.feature
