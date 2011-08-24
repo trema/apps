@@ -4,7 +4,7 @@ Learning switch with memcached
 This directory includes an OpenFlow controller that controls a single
 OpenFlow switch and emulates a layer 2 switch.
 Use memcached to forwarding database,
-otherwise same as `trema/src/src/examples/learning_switch`(Ruby version).
+otherwise same as [learning_switch](https://github.com/trema/trema/tree/master/src/examples/learning_switch)(Ruby version).
 
 Requirements
 ------------
@@ -50,7 +50,7 @@ How to run
 
   Forwarding database dumper
 
-        $ ./fdb-dumper
+        $ ../apps/learning_switch_memcached/fdb-dumper
 
 License & Terms
 ---------------

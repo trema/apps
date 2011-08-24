@@ -4,7 +4,7 @@ Multi learning switch with memcached
 This directory includes an OpenFlow controller that emulates multiple
 layer 2 switches.
 Use memcached to forwarding database,
-otherwise same as `trema/src/src/examples/multi_learning_switch`(Ruby version).
+otherwise same as [multi_learning_switch](https://github.com/trema/trema/tree/master/src/examples/multi_learning_switch)(Ruby version).
 
 Requirements
 ------------
