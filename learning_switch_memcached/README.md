@@ -3,26 +3,27 @@ Learning switch with memcached
 
 This directory includes an OpenFlow controller that controls a single
 OpenFlow switch and emulates a layer 2 switch.
-
 Use memcached to forwarding database,
 otherwise same as `trema/src/src/examples/learning_switch`(Ruby version).
 
-* Requirements
+Requirements
+------------
 
   - Memcached <http://memcached.org/>
   - Ruby memcache-client <http://seattlerb.rubyforge.org/memcache-client/>
 
   if you are using Ubuntu linux. you can install them as follows:
 
-    Memcached
+  Memcached
 
         $ sudo apt-get install memcached
 
-    Ruby memcache-client
+  Ruby memcache-client
 
         $ sudo gem install memcache-client
 
-* How to build
+How to build
+------------
 
   Get Trema and Apps
 
@@ -35,7 +36,8 @@ otherwise same as `trema/src/src/examples/learning_switch`(Ruby version).
         $ ./build.rb
         $ cd ..
 
-* How to run
+How to run
+----------
 
   Memcached
 
@@ -50,7 +52,8 @@ otherwise same as `trema/src/src/examples/learning_switch`(Ruby version).
 
         $ ./fdb-dumper
 
-* License & Terms
+License & Terms
+---------------
 
 Copyright (C) 2008-2011 NEC Corporation
 
@@ -63,7 +66,10 @@ WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 General Public License for more details.
 
-* Terms of Contributing to Trema program ("Program")
+
+### Terms
+
+Terms of Contributing to Trema program ("Program")
 
 Please read the following terms before you submit to the Trema project
 ("Project") any original works of corrections, modifications,

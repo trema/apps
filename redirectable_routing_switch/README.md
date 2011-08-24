@@ -5,7 +5,8 @@ REDIRECTABLE ROUTING SWITCH IS AN EXPERIMENTAL IMPLEMENTATION AND
 MAY NOT BE FULLY FUNCTIONAL. IF YOU ARE NOT FAMILIAR WITH C AND SQL,
 WE STRONGLY DO NOT RECOMMEND YOU TO RUN THIS APPLICATION.
 
-* What's this?
+What's this?
+------------
 
 This directory includes an OpenFlow controller that emulates a single
 large layer 2 switch consists of arbitrary number of OpenFlow switches
@@ -15,7 +16,8 @@ IP protocol stack. By redirecting traffic, for example, you can direct
 any HTTP requests from authorized host to a specific web server by
 combining this application and iptables.
 
-* How to build
+How to build
+------------
 
   Get Trema and Apps
 
@@ -44,12 +46,14 @@ combining this application and iptables.
 
         $ cd ../..
 
-* How to run
+How to run
+----------
 
         $ cd trema
         $ sudo ./trema run -c ../apps/redirectable_routing_switch/redirectable_routing_switch.conf
 
-* License & Terms
+License & Terms
+---------------
 
 Copyright (C) 2008-2011 NEC Corporation
 
@@ -62,7 +66,10 @@ WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 General Public License for more details.
 
-* Terms of Contributing to Trema program ("Program")
+
+### Terms
+
+Terms of Contributing to Trema program ("Program")
 
 Please read the following terms before you submit to the Trema project
 ("Project") any original works of corrections, modifications,

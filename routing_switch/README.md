@@ -21,7 +21,8 @@ switch.
         +----------+                         packet out(LLDP)               +-----------+
 
 
-* How to build
+How to build
+------------
 
   Get Trema and Apps
 
@@ -46,12 +47,14 @@ switch.
         $ make
         $ cd ../..
 
-* How to run
+How to run
+----------
 
         $ cd trema
         $ sudo ./trema run -c ../apps/routing_switch/routing_switch.conf
 
-* License & Terms
+License & Terms
+---------------
 
 Copyright (C) 2008-2011 NEC Corporation
 
@@ -64,7 +67,10 @@ WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 General Public License for more details.
 
-* Terms of Contributing to Trema program ("Program")
+
+## Terms
+
+Terms of Contributing to Trema program ("Program")
 
 Please read the following terms before you submit to the Trema project
 ("Project") any original works of corrections, modifications,
