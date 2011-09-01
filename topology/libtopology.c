@@ -376,7 +376,7 @@ init_libtopology( const char *service_name ) {
 
   topology_name = xstrdup( service_name );
 
-  const size_t name_len = strlen( service_name ) + strlen( "-client-65535" ) + 1;
+  const size_t name_len = strlen( service_name ) + strlen( "-client-4294967295" ) + 1;
   libtopology_queue_name = xcalloc( 1, name_len );
   snprintf( libtopology_queue_name, name_len, "%s-client-%d",
             service_name, getpid() );
