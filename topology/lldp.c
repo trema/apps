@@ -84,7 +84,7 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
   uint32_t len = 0;
   uint8_t subtype = 0;
 
-  info( "Receiving LLDP frame." );
+  debug( "Receiving LLDP frame." );
 
   lldp_frame = packet_info( buf )->l2_data.eth;
   remain_len = buf->length;
