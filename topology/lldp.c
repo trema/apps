@@ -184,7 +184,7 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   buffer *lldp_buf;
   size_t lldp_buf_len = 0;
   ether_header_t *ether;
-  ipv4_header_t *ip;
+  ipv4_header_t *ip = NULL;
 
   struct tlv *chassis_id_tlv;
   uint32_t chassis_id_tlv_len = 0;
