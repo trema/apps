@@ -45,4 +45,15 @@ run_acceptance_test:
 	  ) \
 	done
 
+cbench:
+	( \
+          set -x; \
+          cd ${TREMA}; \
+	  ./trema run -c ../apps/routing_switch/routing_switch_null.conf -d; \
+          sleep 15; \
+	  objects/oflops/bin/cbench --switches 1 --loops 10 --delay 1000; \
+	  objects/oflops/bin/cbench --switches 1 --loops 10 --delay 1000 --throughput; \
+          ./trema killall; \
+	)
+
 -include $(DEPENDS)
