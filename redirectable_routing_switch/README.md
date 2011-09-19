@@ -30,9 +30,14 @@ How to build
         $ ./build.rb
         $ cd ..
 
+  Build topology
+
+        $ cd apps/topology
+        $ make
+        $ cd ../..
+
   Build redirectable routing switch and create authorized host database
 
-        $ sudo apt-get install sqlite3 libsqlite3-dev
         $ cd apps/redirectable_routing_switch
         $ make
         $ ./create_authorized_host_db.sh
