@@ -193,10 +193,10 @@ foreach_port( const list_element *ports,
 void
 foreach_switch( const list_element *switches,
                 void ( *function )( switch_info *sw,
-                                    buffer *packet,
+                                    const buffer *packet,
                                     uint64_t dpid,
                                     uint16_t in_port ),
-                buffer *packet, uint64_t dpid, uint16_t in_port ) {
+                const buffer *packet, uint64_t dpid, uint16_t in_port ) {
   for ( const list_element *s = switches; s != NULL; s = s->next ) {
     ( *function )( s->data, packet, dpid, in_port );
   }

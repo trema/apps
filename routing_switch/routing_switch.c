@@ -51,17 +51,8 @@ typedef struct routing_switch {
   uint16_t idle_timeout;
   list_element *switches;
   hash_table *fdb;
+  pathresolver *pathresolver;
 } routing_switch;
-
-
-typedef struct resolve_path_replied_params {
-  routing_switch *routing_switch;
-  uint64_t in_datapath_id;
-  uint16_t in_port;
-  uint64_t out_datapath_id;
-  uint16_t out_port;
-  buffer *original_packet;
-} resolve_path_replied_params;
 
 
 static void
@@ -91,7 +82,7 @@ modify_flow_entry( const pathresolver_hop *h, const buffer *original_packet, uin
 
 
 static void
-output_packet( buffer *packet, uint64_t dpid, uint16_t port_no ) {
+output_packet( const buffer *packet, uint64_t dpid, uint16_t port_no ) {
   openflow_actions *actions = create_actions();
   const uint16_t max_len = UINT16_MAX;
   append_action_output( actions, port_no, max_len );
@@ -100,7 +91,6 @@ output_packet( buffer *packet, uint64_t dpid, uint16_t port_no ) {
   const uint32_t buffer_id = UINT32_MAX;
   const uint16_t in_port = OFPP_NONE;
 
-  fill_ether_padding( packet );
   buffer *packet_out = create_packet_out( transaction_id, buffer_id, in_port,
                                           actions, packet );
 
@@ -112,7 +102,7 @@ output_packet( buffer *packet, uint64_t dpid, uint16_t port_no ) {
 
 
 static void
-output_packet_from_last_switch( const pathresolver_hop *last_hop, buffer *packet ) {
+output_packet_from_last_switch( const pathresolver_hop *last_hop, const buffer *packet ) {
   output_packet( packet, last_hop->dpid, last_hop->out_port_no );
 }
 
@@ -155,32 +145,15 @@ discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet 
 
 
 static void
-resolve_path_replied( void *user_data, dlist_element *hops ) {
-  assert( user_data != NULL );
+make_path( routing_switch *routing_switch, uint64_t in_datapath_id, uint16_t in_port,
+           uint64_t out_datapath_id, uint16_t out_port, const buffer *packet ) {
 
-  resolve_path_replied_params *param = user_data;
-  routing_switch *routing_switch = param->routing_switch;
-  uint64_t in_datapath_id = param->in_datapath_id;
-  uint16_t in_port = param->in_port;
-  uint64_t out_datapath_id = param->out_datapath_id;
-  uint16_t out_port = param->out_port;
-  buffer *original_packet = param->original_packet;
-
-  original_packet->user_data = NULL;
-  if ( !parse_packet( original_packet ) ) {
-    warn( "Received unsupported packet." );
-    free_buffer( original_packet );
-    free_hop_list( hops );
-    xfree( param );
-    return;
-  }
+  dlist_element *hops = resolve_path( routing_switch->pathresolver, in_datapath_id, in_port, out_datapath_id, out_port );
 
   if ( hops == NULL ) {
     warn( "No available path found ( %#" PRIx64 ":%u -> %#" PRIx64 ":%u ).",
           in_datapath_id, in_port, out_datapath_id, out_port );
-    discard_packet_in( in_datapath_id, in_port, original_packet );
-    free_buffer( original_packet );
-    xfree( param );
+    discard_packet_in( in_datapath_id, in_port, packet );
     return;
   }
 
@@ -190,18 +163,16 @@ resolve_path_replied( void *user_data, dlist_element *hops ) {
   // send flow entry from tail switch
   for ( dlist_element *e  = get_last_element( hops ); e != NULL; e = e->prev, hop_count-- ) {
     uint16_t idle_timer = ( uint16_t ) ( routing_switch->idle_timeout + hop_count );
-    modify_flow_entry( e->data, original_packet, idle_timer );
+    modify_flow_entry( e->data, packet, idle_timer );
   } // for(;;)
 
   // send packet out for tail switch
   dlist_element *e = get_last_element( hops );
   pathresolver_hop *last_hop = e->data;
-  output_packet_from_last_switch( last_hop, original_packet );
+  output_packet_from_last_switch( last_hop, packet );
 
   // free them
   free_hop_list( hops );
-  free_buffer( original_packet );
-  xfree( param );
 }
 
 
@@ -301,7 +272,7 @@ build_packet_out_actions( port_info *port, openflow_actions *actions, uint64_t d
 
 
 static void
-send_packet_out_for_each_switch( switch_info *sw, buffer *packet, uint64_t dpid, uint16_t in_port ) {
+send_packet_out_for_each_switch( switch_info *sw, const buffer *packet, uint64_t dpid, uint16_t in_port ) {
   openflow_actions *actions = create_actions();
   int number_of_actions = foreach_port( sw->ports, build_packet_out_actions, actions, dpid, in_port );
 
@@ -311,7 +282,6 @@ send_packet_out_for_each_switch( switch_info *sw, buffer *packet, uint64_t dpid,
     const uint32_t buffer_id = UINT32_MAX;
     const uint16_t in_port = OFPP_NONE;
 
-    fill_ether_padding( packet );
     buffer *packet_out = create_packet_out( transaction_id, buffer_id, in_port,
                                             actions, packet );
 
@@ -325,9 +295,8 @@ send_packet_out_for_each_switch( switch_info *sw, buffer *packet, uint64_t dpid,
 
 
 static void
-flood_packet( uint64_t datapath_id, uint16_t in_port, buffer *packet, list_element *switches ) {
+flood_packet( uint64_t datapath_id, uint16_t in_port, const buffer *packet, list_element *switches ) {
   foreach_switch( switches, send_packet_out_for_each_switch, packet, datapath_id, in_port );
-  free_buffer( packet );
 }
 
 
@@ -379,7 +348,6 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
     return;
   }
 
-  buffer *original_packet = duplicate_buffer( data );
   uint16_t out_port;
   uint64_t out_datapath_id;
 
@@ -387,26 +355,14 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
     // Host is located, so resolve path and send flowmod
     if ( ( datapath_id == out_datapath_id ) && ( in_port == out_port ) ) {
       // in and out are same
-      free_buffer( original_packet );
       return;
     }
 
-    // Ask path resolver service to lookup a path
-    // resolve_path_replied() will be called later
-    resolve_path_replied_params *param = xmalloc( sizeof( resolve_path_replied_params ) );
-    param->routing_switch = routing_switch;
-    param->in_datapath_id = datapath_id;
-    param->in_port = in_port;
-    param->out_datapath_id = out_datapath_id;
-    param->out_port = out_port;
-    param->original_packet = original_packet;
-
-    resolve_path( datapath_id, in_port, out_datapath_id, out_port,
-                  param, resolve_path_replied );
+    make_path( routing_switch, datapath_id, in_port, out_datapath_id, out_port, data );
   }
   else {
     // Host's location is unknown, so flood packet
-    flood_packet( datapath_id, in_port, original_packet, routing_switch->switches );
+    flood_packet( datapath_id, in_port, data, routing_switch->switches );
   }
 }
 
@@ -449,15 +405,17 @@ link_status_updated( void *user_data, const topology_link_status *status ) {
   assert( status != NULL );
 
   routing_switch *routing_switch = user_data;
+  update_topology( routing_switch->pathresolver, status );
   update_port_status_by_link( routing_switch->switches, status );
 }
 
 
 static void
-update_ports_status( list_element *switches, size_t n_entries,
+update_link_status( routing_switch *routing_switch, size_t n_entries,
                               const topology_link_status *status ) {
   for ( size_t i = 0; i < n_entries; i++ ) {
-    update_port_status_by_link( switches, &status[ i ] );
+    update_topology( routing_switch->pathresolver, &status[ i ] );
+    update_port_status_by_link( routing_switch->switches, &status[ i ] );
   }
 }
 
@@ -468,7 +426,7 @@ init_last_stage( void *user_data, size_t n_entries, const topology_link_status *
 
   routing_switch *routing_switch = user_data;
 
-  update_ports_status( routing_switch->switches, n_entries, status );
+  update_link_status( routing_switch, n_entries, status );
   add_callback_link_status_updated( link_status_updated, routing_switch );
 }
 
@@ -526,6 +484,9 @@ create_routing_switch( const char *topology_service, const routing_switch_option
 
   info( "idle_timeout is set to %u [sec].", routing_switch->idle_timeout );
 
+  // Create pathresolver table
+  routing_switch->pathresolver = create_pathresolver();
+
   // Create forwarding database
   routing_switch->fdb = create_fdb();
 
@@ -546,6 +507,9 @@ create_routing_switch( const char *topology_service, const routing_switch_option
 static void
 delete_routing_switch( routing_switch *routing_switch ) {
   assert( routing_switch != NULL );
+
+  // Delete pathresolver table
+  delete_pathresolver( routing_switch->pathresolver );
 
   // Finalize libraries
   finalize_libtopology();
