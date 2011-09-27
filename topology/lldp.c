@@ -76,7 +76,6 @@ send_lldp( probe_timer_entry *port ) {
 static int
 recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
   int ret;
-  ether_header_t *lldp_frame;
   size_t remain_len = 0;
   uint16_t *lldp_tlv;
   uint8_t *lldp_du;
@@ -86,24 +85,26 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
 
   debug( "Receiving LLDP frame." );
 
-  lldp_frame = packet_info( buf )->l2_data.eth;
+  packet_info *packet_info0 = buf->user_data;
+  assert( packet_info0 != NULL );
   remain_len = buf->length;
 
-  if ( packet_info( buf )->vtag ) {
-    die( "no vlan tag is supported" );
+  if ( packet_type_eth_vtag( buf ) ) {
+    error( "no vlan tag is supported" );
+    return -1;
   }
 
-  remain_len -= ( sizeof( ether_header_t ) - ETH_PREPADLEN );
+  remain_len -= sizeof( ether_header_t );
 
-  if ( packet_info( buf )->ethtype == ETH_ETHTYPE_LLDP ) {
-    lldp_tlv = packet_info( buf )->l3_data.l3;
+  if ( packet_info0->eth_type == ETH_ETHTYPE_LLDP ) {
+    lldp_tlv = packet_info0->l3_header;
   }
-  else if ( packet_info( buf )->ethtype == ETH_ETHTYPE_IPV4 ) {
-    remain_len -= sizeof( ipv4_header_t ) + sizeof( etherip_header ) + sizeof( ether_header_t ) - ETH_PREPADLEN;
-    lldp_tlv = ( uint16_t * ) ( ( char * ) packet_info( buf )->l4_data.l4 + sizeof( etherip_header ) + sizeof( ether_header_t ) - ETH_PREPADLEN );
+  else if ( packet_info0->eth_type == ETH_ETHTYPE_IPV4 ) {
+    remain_len -= sizeof( ipv4_header_t ) + sizeof( etherip_header ) + sizeof( ether_header_t );
+    lldp_tlv = ( uint16_t * ) ( ( char * ) packet_info0->l3_header + sizeof( etherip_header ) + sizeof( ether_header_t ) );
   }
   else {
-    error( "Unsupported ether type ( %#x ).", packet_info( buf )->ethtype );
+    error( "Unsupported ether type ( %#x ).", packet_info0->eth_type );
     return -1;
   }
 
@@ -179,6 +180,25 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
 }
 
 
+uint16_t
+get_checksum( uint16_t *pos, uint32_t size ) {
+  assert( pos != NULL );
+
+  uint32_t csum = 0;
+  for (; 2 <= size; pos++, size -= 2 ) {
+    csum += *pos;
+  }
+  if ( size == 1 ) {
+    csum += *( unsigned char * ) pos;
+  }
+  while ( csum & 0xffff0000 ) {
+    csum = ( csum & 0x0000ffff ) + ( csum >> 16 );
+  }
+
+  return ( uint16_t ) ~csum;
+}
+
+
 static buffer *
 create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   buffer *lldp_buf;
@@ -214,17 +234,16 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   port_id_tlv_len = LLDP_TLV_HEAD_LEN + LLDP_SUBTYPE_LEN + port_id_strlen;
 
   lldp_buf_len = sizeof( ether_header_t ) + chassis_id_tlv_len + port_id_tlv_len
-    + LLDP_TTL_LEN + LLDP_END_PDU_LEN;
+    + LLDP_TTL_LEN;
 
   if ( lldp_over_ip ) {
-    lldp_buf_len += sizeof( ipv4_header_t ) + sizeof( etherip_header ) + sizeof( ether_header_t ) - ETH_PREPADLEN;
+    lldp_buf_len += sizeof( ipv4_header_t ) + sizeof( etherip_header ) + sizeof( ether_header_t );
   }
 
   lldp_buf = alloc_buffer_with_length( lldp_buf_len );
 
   // Create ether frame header
   ether = append_back_buffer( lldp_buf, sizeof( ether_header_t ) );
-  remove_front_buffer( lldp_buf, sizeof( ether->prepad ) );
   if ( !lldp_over_ip ) {
     memcpy( ether->macda, lldp_default_dst, ETH_ADDRLEN );
   }
@@ -251,7 +270,7 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
     ip->daddr = htonl( lldp_ip_dst );
     etherip_header *etherip = append_back_buffer( lldp_buf, sizeof( etherip_header ) );
     etherip->version = htons( ETHERIP_VERSION );
-    ether_header_t *eth = ( ether_header_t * ) ( ( char * ) append_back_buffer( lldp_buf, sizeof( ether_header_t ) - ETH_PREPADLEN ) - ETH_PREPADLEN );
+    ether_header_t *eth = ( ether_header_t * ) ( char * ) append_back_buffer( lldp_buf, sizeof( ether_header_t ) );
     memcpy( eth->macda, lldp_default_dst, ETH_ADDRLEN );
     memcpy( eth->macsa, mac, ETH_ADDRLEN );
     eth->type = htons( ETH_ETHTYPE_LLDP );
@@ -285,8 +304,8 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
 
   uint16_t padding_length = fill_ether_padding( lldp_buf );
   if ( lldp_over_ip ) {
-    ip->tot_len = htons( ( uint16_t ) (ntohs( ip->tot_len ) + padding_length ) );
-    ip->check = get_checksum( ( uint16_t * ) ip, sizeof( ipv4_header_t ) );
+    ip->tot_len = htons( ( uint16_t ) ( ntohs( ip->tot_len ) + padding_length ) );
+    ip->check = ( uint16_t ) get_checksum( ( uint16_t * ) ip, sizeof( ipv4_header_t ) );
   }
 
   return lldp_buf;
@@ -348,11 +367,12 @@ handle_packet_in( uint64_t dst_datapath_id,
                   uint8_t reason __attribute__((unused)),
                   const buffer *m,
                   void *user_data __attribute__((unused)) ) {
-  uint16_t type = ntohs( packet_info( m )->l2_data.eth->type );
+  packet_info *packet_info0 = m->user_data;
+  assert( packet_info0 != NULL );
 
   // check if LLDP or not
-  if ( type != lldp_ethtype ) {
-    notice( "Non-LLDP packet is received ( type = %#x ).", type );
+  if ( packet_info0->eth_type != lldp_ethtype ) {
+    notice( "Non-LLDP packet is received ( type = %#x ).", packet_info0->eth_type );
     return;
   }
 

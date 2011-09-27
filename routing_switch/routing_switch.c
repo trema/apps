@@ -322,8 +322,10 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
     return;
   }
 
-  const uint8_t *src = packet_info( data )->l2_data.eth->macsa;
-  const uint8_t *dst = packet_info( data )->l2_data.eth->macda;
+  packet_info *packet_info0 = data->user_data;
+  assert( packet_info0 != NULL );
+  const uint8_t *src = packet_info0->eth_macsa;
+  const uint8_t *dst = packet_info0->eth_macda;
 
   if ( in_port > OFPP_MAX && in_port != OFPP_LOCAL ) {
     error( "Packet-In from invalid port ( in_port = %u ).", in_port );

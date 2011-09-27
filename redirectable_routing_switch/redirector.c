@@ -18,6 +18,7 @@
  */
 
 
+#include <assert.h>
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -472,15 +473,16 @@ redirect( uint64_t datapath_id, uint16_t in_port, const buffer *data ) {
   debug( "A message received (dpid = %#" PRIx64 ", in_port = %u, length = %u).",
          datapath_id, in_port, data->length );
 
-  uint8_t *mac = packet_info( data )->l2_data.eth->macsa;
-  uint32_t ip = packet_info( data )->l3_data.ipv4->saddr;
+  packet_info *packet_info0 = data->user_data;
+  assert( packet_info0 != NULL );
+  assert( packet_info0->ipv4_protocol == IPPROTO_TCP );
+  const uint8_t *mac = packet_info0->eth_macsa;
 
-  add_host( mac, ip, datapath_id, in_port );
+  add_host( mac, packet_info0->ipv4_saddr, datapath_id, in_port );
 
   debug( "Redirecting an IP packet to tun interface." );
   // redirect an IP packet to a tun interface
-  send_packet_to_tun( packet_info( data )->l3_data.l3,
-                      ntohs( packet_info( data )->l3_data.ipv4->tot_len ) );
+  send_packet_to_tun( packet_info0->l4_payload, packet_info0->ipv4_tot_len );
 }
 
 

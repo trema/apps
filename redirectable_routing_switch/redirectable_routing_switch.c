@@ -312,8 +312,10 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
 
   const port_info *port = lookup_outbound_port( routing_switch->switches, datapath_id, in_port );
 
-  const uint8_t *src = packet_info( data )->l2_data.eth->macsa;
-  const uint8_t *dst = packet_info( data )->l2_data.eth->macda;
+  packet_info *packet_info0 = data->user_data;
+  assert( packet_info0 != NULL );
+  const uint8_t *src = packet_info0->eth_macsa;
+  const uint8_t *dst = packet_info0->eth_macda;
 
   if ( in_port <= OFPP_MAX || in_port == OFPP_LOCAL ) {
     if ( port == NULL && !lookup_fdb( routing_switch->fdb, src, &datapath_id, &in_port ) ) {
@@ -331,33 +333,29 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
   }
 
   if ( !authenticate( src ) ) {
-    if ( packet_info( data )->ethtype == ETH_ETHTYPE_IPV4 ) {
-      if ( packet_info( data )->l3_data.ipv4->protocol == IPPROTO_UDP ) {
-        udp_header_t *udp_header = packet_info( data )->l4_data.udp;
-        if ( ( ntohs( udp_header->src_port ) == 67 ) ||
-             ( ntohs( udp_header->src_port ) == 68 ) ||
-             ( ntohs( udp_header->dst_port ) == 67 ) ||
-             ( ntohs( udp_header->dst_port ) == 68 ) ) {
-          // DHCP/BOOTP is allowed by default
-          goto authenticated;
-        }
-        if ( ( ntohs( udp_header->src_port ) == 53 ) ||
-             ( ntohs( udp_header->dst_port ) == 53 ) ) {
-          // DNS is allowed by default
-          goto authenticated;
-        }
+    if ( packet_type_eth_ipv4_udp( data ) ) {
+      if ( packet_info0->udp_src_port == 67 ||
+           packet_info0->udp_src_port == 68 ||
+           packet_info0->udp_dst_port == 67 ||
+           packet_info0->udp_dst_port == 68 ) {
+        // DHCP/BOOTP is allowed by default
+        goto authenticated;
       }
-      else if ( packet_info( data )->l3_data.ipv4->protocol == IPPROTO_TCP ) {
-        tcp_header_t *tcp_header = packet_info( data )->l4_data.tcp;
-        if ( ( ntohs( tcp_header->src_port ) == 53 ) ||
-             ( ntohs( tcp_header->dst_port ) == 53 ) ) {
-          // DNS is allowed by default
-          goto authenticated;
-        }
+      if ( packet_info0->udp_src_port == 53 ||
+           packet_info0->udp_dst_port == 53 ) {
+        // DNS is allowed by default
+        goto authenticated;
+      }
+    }
+    else if ( packet_type_eth_ipv4_tcp( data ) ) {
+      if ( packet_info0->tcp_src_port == 53 ||
+           packet_info0->tcp_dst_port == 53 ) {
+        // DNS is allowed by default
+        goto authenticated;
       }
       redirect( datapath_id, in_port, data );
     }
-    else if ( packet_info( data )->ethtype == ETH_ETHTYPE_ARP ) {
+    else if ( packet_type_eth_arp( data ) ) {
       // ARP request/reply is allowed
       goto authenticated;
     }
