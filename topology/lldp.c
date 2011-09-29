@@ -180,25 +180,6 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
 }
 
 
-uint16_t
-get_checksum( uint16_t *pos, uint32_t size ) {
-  assert( pos != NULL );
-
-  uint32_t csum = 0;
-  for (; 2 <= size; pos++, size -= 2 ) {
-    csum += *pos;
-  }
-  if ( size == 1 ) {
-    csum += *( unsigned char * ) pos;
-  }
-  while ( csum & 0xffff0000 ) {
-    csum = ( csum & 0x0000ffff ) + ( csum >> 16 );
-  }
-
-  return ( uint16_t ) ~csum;
-}
-
-
 static buffer *
 create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   buffer *lldp_buf;
