@@ -174,10 +174,9 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
   UNUSED( total_len );
   UNUSED( reason );
 
-  packet_info *packet_info = data->user_data;
-  assert( packet_info != NULL );
-  if ( packet_info->eth_type == ETH_ETHTYPE_IPV4 &&
-       ntohl( packet_info->ipv4_daddr ) == 0x01010101 ) {
+  packet_info packet_info = get_packet_info( data );
+  if ( packet_type_ipv4( data ) &&
+       packet_info.ipv4_daddr == 0x01010101 ) {
 
     struct ofp_match match;
     set_match_from_packet( &match, in_port, 0, data );
@@ -244,13 +243,13 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
   }
 
   struct key new_key;
-  memcpy( new_key.mac, packet_info->eth_macsa, OFP_ETH_ALEN );
+  memcpy( new_key.mac, packet_info.eth_macsa, OFP_ETH_ALEN );
   new_key.datapath_id = datapath_id;
   hash_table *forwarding_db = user_data;
   learn( forwarding_db, new_key, in_port );
 
   struct key search_key;
-  memcpy( search_key.mac, packet_info->eth_macda, OFP_ETH_ALEN );
+  memcpy( search_key.mac, packet_info.eth_macda, OFP_ETH_ALEN );
   search_key.datapath_id = datapath_id;
   forwarding_entry *destination = lookup_hash_entry( forwarding_db, &search_key );
 

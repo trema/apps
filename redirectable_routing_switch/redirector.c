@@ -473,19 +473,21 @@ redirect( uint64_t datapath_id, uint16_t in_port, const buffer *data ) {
   debug( "A message received (dpid = %#" PRIx64 ", in_port = %u, length = %u).",
          datapath_id, in_port, data->length );
 
-  packet_info *packet_info = data->user_data;
-  assert( packet_info != NULL );
+  packet_info packet_info = get_packet_info( data );
+  if ( !packet_type_ipv4( data ) ) {
+    debug( "Cannot redirect the packet which is not IPv4." );
+    return;
+  }
 
-  uint8_t *mac = packet_info->eth_macsa;
-  uint32_t ip = packet_info->ipv4_saddr;
-
+  uint8_t *mac = packet_info.eth_macsa;
+  uint32_t ip = packet_info.ipv4_saddr;
   add_host( mac, ip, datapath_id, in_port );
 
   debug( "Redirecting an IP packet to tun interface." );
-  assert( packet_info->l3_header != NULL );
+  assert( packet_info.l3_header != NULL );
   // redirect an IP packet to a tun interface
-  send_packet_to_tun( packet_info->l3_header,
-                      packet_info->ipv4_tot_len );
+  send_packet_to_tun( packet_info.l3_header,
+                      packet_info.ipv4_tot_len );
 }
 
 
