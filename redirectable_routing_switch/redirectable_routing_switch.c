@@ -356,7 +356,7 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
       }
       redirect( datapath_id, in_port, data );
     }
-    else if ( packcet_type_arp( data ) ) {
+    else if ( packet_type_arp( data ) ) {
       // ARP request/reply is allowed
       goto authenticated;
     }

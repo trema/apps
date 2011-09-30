@@ -77,7 +77,7 @@ static int
 recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
   int ret;
   size_t remain_len = 0;
-  uint16_t *lldp_tlv;
+  uint16_t *lldp_tlv = NULL;
   uint8_t *lldp_du;
   uint32_t type = 0;
   uint32_t len = 0;
@@ -85,8 +85,8 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
 
   debug( "Receiving LLDP frame." );
 
-  packet_info *packet_info0 = buf->user_data;
-  assert( packet_info0 != NULL );
+  packet_info *packet_info = buf->user_data;
+  assert( packet_info != NULL );
   remain_len = buf->length;
 
   if ( packet_type_eth_vtag( buf ) ) {
@@ -96,15 +96,15 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
 
   remain_len -= sizeof( ether_header_t );
 
-  if ( packet_info0->eth_type == ETH_ETHTYPE_LLDP ) {
-    lldp_tlv = packet_info0->l3_header;
+  if ( packet_info->eth_type == ETH_ETHTYPE_LLDP ) {
+    lldp_tlv = packet_info->l2_payload;
   }
-  else if ( packet_info0->eth_type == ETH_ETHTYPE_IPV4 ) {
+  else if ( packet_info->eth_type == ETH_ETHTYPE_IPV4 ) {
     remain_len -= sizeof( ipv4_header_t ) + sizeof( etherip_header ) + sizeof( ether_header_t );
-    lldp_tlv = ( uint16_t * ) ( ( char * ) packet_info0->l3_header + sizeof( etherip_header ) + sizeof( ether_header_t ) );
+    lldp_tlv = ( uint16_t * ) ( ( char * ) packet_info->l2_payload + sizeof( etherip_header ) + sizeof( ether_header_t ) );
   }
   else {
-    error( "Unsupported ether type ( %#x ).", packet_info0->eth_type );
+    error( "Unsupported ether type ( %#x ).", packet_info->eth_type );
     return -1;
   }
 
@@ -113,7 +113,7 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
       info( "Missing size of LLDP tlv header." );
       return -1;
     }
-
+    assert( lldp_tlv );
     type = LLDP_TYPE( *lldp_tlv );
     len = ( uint32_t ) LLDP_LEN( *lldp_tlv );
     assert( len <= LLDP_TLV_INFO_MAX_LEN );
@@ -348,12 +348,12 @@ handle_packet_in( uint64_t dst_datapath_id,
                   uint8_t reason __attribute__((unused)),
                   const buffer *m,
                   void *user_data __attribute__((unused)) ) {
-  packet_info *packet_info0 = m->user_data;
-  assert( packet_info0 != NULL );
+  packet_info *packet_info = m->user_data;
+  assert( packet_info != NULL );
 
   // check if LLDP or not
-  if ( packet_info0->eth_type != lldp_ethtype ) {
-    notice( "Non-LLDP packet is received ( type = %#x ).", packet_info0->eth_type );
+  if ( packet_info->eth_type != lldp_ethtype ) {
+    notice( "Non-LLDP packet is received ( type = %#x ).", packet_info->eth_type );
     return;
   }
 
