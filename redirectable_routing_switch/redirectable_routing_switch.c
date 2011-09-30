@@ -333,7 +333,7 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
   }
 
   if ( !authenticate( src ) ) {
-    if ( packet_type_eth_ipv4_udp( data ) ) {
+    if ( packet_type_ipv4_udp( data ) ) {
       if ( packet_info0->udp_src_port == 67 ||
            packet_info0->udp_src_port == 68 ||
            packet_info0->udp_dst_port == 67 ||
@@ -347,7 +347,7 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
         goto authenticated;
       }
     }
-    else if ( packet_type_eth_ipv4_tcp( data ) ) {
+    else if ( packet_type_ipv4_tcp( data ) ) {
       if ( packet_info0->tcp_src_port == 53 ||
            packet_info0->tcp_dst_port == 53 ) {
         // DNS is allowed by default
@@ -355,7 +355,7 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
       }
       redirect( datapath_id, in_port, data );
     }
-    else if ( packet_type_eth_arp( data ) ) {
+    else if ( packet_type_arp( data ) ) {
       // ARP request/reply is allowed
       goto authenticated;
     }

@@ -482,7 +482,8 @@ redirect( uint64_t datapath_id, uint16_t in_port, const buffer *data ) {
 
   debug( "Redirecting an IP packet to tun interface." );
   // redirect an IP packet to a tun interface
-  send_packet_to_tun( packet_info0->l4_payload, packet_info0->ipv4_tot_len );
+  assert( packet_info0->l2_payload != NULL );
+  send_packet_to_tun( packet_info0->l2_payload, packet_info0->ipv4_tot_len );
 }
 
 

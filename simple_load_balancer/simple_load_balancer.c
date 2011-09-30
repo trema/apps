@@ -177,7 +177,7 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
   packet_info *packet_info0 = data->user_data;
   assert( packet_info0 != NULL );
 
-  if ( packet_type_eth_ipv4( data ) &&
+  if ( packet_type_ipv4( data ) &&
        packet_info0->ipv4_daddr == 0x01010101 ) {
 
     struct ofp_match match;
