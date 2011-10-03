@@ -44,6 +44,7 @@
 
 
 static const uint16_t FLOW_TIMER = 60;
+static const uint16_t PACKET_IN_DISCARD_DURATION = 1;
 
 
 typedef struct routing_switch_options {
@@ -56,13 +57,8 @@ typedef struct routing_switch {
   uint16_t idle_timeout;
   list_element *switches;
   hash_table *fdb;
+  pathresolver *pathresolver;
 } routing_switch;
-
-
-typedef struct resolve_path_replied_params {
-  routing_switch *routing_switch;
-  buffer *original_packet;
-} resolve_path_replied_params;
 
 
 static void
@@ -92,7 +88,7 @@ modify_flow_entry( const pathresolver_hop *h, const buffer *original_packet, uin
 
 
 static void
-output_packet( buffer *packet, uint64_t dpid, uint16_t port_no ) {
+output_packet( const buffer *packet, uint64_t dpid, uint16_t port_no ) {
   openflow_actions *actions = create_actions();
   const uint16_t max_len = UINT16_MAX;
   append_action_output( actions, port_no, max_len );
@@ -101,7 +97,6 @@ output_packet( buffer *packet, uint64_t dpid, uint16_t port_no ) {
   const uint32_t buffer_id = UINT32_MAX;
   const uint16_t in_port = OFPP_NONE;
 
-  fill_ether_padding( packet );
   buffer *packet_out = create_packet_out( transaction_id, buffer_id, in_port,
                                           actions, packet );
 
@@ -113,7 +108,7 @@ output_packet( buffer *packet, uint64_t dpid, uint16_t port_no ) {
 
 
 static void
-output_packet_from_last_switch( const pathresolver_hop *last_hop, buffer *packet ) {
+output_packet_from_last_switch( const pathresolver_hop *last_hop, const buffer *packet ) {
   output_packet( packet, last_hop->dpid, last_hop->out_port_no );
 }
 
@@ -129,26 +124,41 @@ count_hops( const dlist_element *hops ) {
 
 
 static void
-resolve_path_replied( void *user_data, dlist_element *hops ) {
-  assert( user_data != NULL );
+discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet ) {
+  const uint32_t wildcards = 0;
+  struct ofp_match match;
+  set_match_from_packet( &match, in_port, wildcards, packet );
+  char match_str[ 1024 ];
+  match_to_string( &match, match_str, sizeof( match_str ) );
 
-  resolve_path_replied_params *param = user_data;
-  routing_switch *routing_switch = param->routing_switch;
-  buffer *original_packet = param->original_packet;
+  const uint16_t idle_timeout = 0;
+  const uint16_t hard_timeout = PACKET_IN_DISCARD_DURATION;
+  const uint16_t priority = UINT16_MAX;
+  const uint32_t buffer_id = UINT32_MAX;
+  const uint16_t flags = 0;
+
+  info( "Discarding packets for a certain period ( datapath_id = %#" PRIx64
+        ", match = [%s], duration = %u [sec] ).", datapath_id, match_str, hard_timeout );
+
+  buffer *flow_mod = create_flow_mod( get_transaction_id(), match, get_cookie(),
+                                      OFPFC_ADD, idle_timeout, hard_timeout,
+                                      priority, buffer_id,
+                                      OFPP_NONE, flags, NULL );
+
+  send_openflow_message( datapath_id, flow_mod );
+  free_buffer( flow_mod );
+}
+
+
+static void
+make_path( routing_switch *routing_switch, uint64_t in_datapath_id, uint16_t in_port,
+           uint64_t out_datapath_id, uint16_t out_port, const buffer *packet ) {
+  dlist_element *hops = resolve_path( routing_switch->pathresolver, in_datapath_id, in_port, out_datapath_id, out_port );
 
   if ( hops == NULL ) {
-    warn( "No available path found." );
-    free_buffer( original_packet );
-    xfree( param );
-    return;
-  }
-
-  original_packet->user_data = NULL;
-  if ( !parse_packet( original_packet ) ) {
-    warn( "Received unsupported packet" );
-    free_buffer( original_packet );
-    free_hop_list( hops );
-    xfree( param );
+    warn( "No available path found ( %#" PRIx64 ":%u -> %#" PRIx64 ":%u ).",
+          in_datapath_id, in_port, out_datapath_id, out_port );
+    discard_packet_in( in_datapath_id, in_port, packet );
     return;
   }
 
@@ -158,18 +168,16 @@ resolve_path_replied( void *user_data, dlist_element *hops ) {
   // send flow entry from tail switch
   for ( dlist_element *e  = get_last_element( hops ); e != NULL; e = e->prev, hop_count-- ) {
     uint16_t idle_timer = ( uint16_t ) ( routing_switch->idle_timeout + hop_count );
-    modify_flow_entry( e->data, original_packet, idle_timer );
+    modify_flow_entry( e->data, packet, idle_timer );
   } // for(;;)
 
   // send packet out for tail switch
   dlist_element *e = get_last_element( hops );
   pathresolver_hop *last_hop = e->data;
-  output_packet_from_last_switch( last_hop, original_packet );
+  output_packet_from_last_switch( last_hop, packet );
 
   // free them
   free_hop_list( hops );
-  free_buffer( original_packet );
-  xfree( param );
 }
 
 
@@ -230,22 +238,23 @@ port_status_updated( void *user_data, const topology_port_status *status ) {
     return;
   }
 
-  port_info *p = lookup_outbound_port( routing_switch->switches, status->dpid, status->port_no );
+  port_info *p = lookup_port( routing_switch->switches, status->dpid, status->port_no );
 
-  if ( status->status == TD_PORT_UP
-       && status->external == TD_PORT_EXTERNAL ) {
+  delete_fdb_entries( routing_switch->fdb, status->dpid, status->port_no );
+
+  if ( status->status == TD_PORT_UP ) {
     if ( p != NULL ) {
-      debug( "Ignore this update (already exists)" );
+      update_port( p, status->external );
       return;
     }
-    add_outbound_port( &routing_switch->switches, status->dpid, status->port_no );
-    set_miss_send_len_maximum( status->dpid );
-  } else {
+    add_port( &routing_switch->switches, status->dpid, status->port_no, status->external );
+  }
+  else {
     if ( p == NULL ) {
       debug( "Ignore this update (not found nor already deleted)" );
       return;
     }
-    delete_outbound_port( &routing_switch->switches, p );
+    delete_port( &routing_switch->switches, p );
   }
 }
 
@@ -253,28 +262,31 @@ port_status_updated( void *user_data, const topology_port_status *status ) {
 static int
 build_packet_out_actions( port_info *port, openflow_actions *actions, uint64_t dpid, uint16_t in_port ) {
   const uint16_t max_len = UINT16_MAX;
+  if ( !port->external_link || port->switch_to_switch_reverse_link ) {
+    // don't send to non-external port
+    return 0;
+  }
   if ( port->dpid == dpid && port->port_no == in_port ) {
     // don't send to input port
     return 0;
-  } else {
-    append_action_output( actions, port->port_no, max_len );
-    return 1;
   }
+
+  append_action_output( actions, port->port_no, max_len );
+  return 1;
 }
 
 
 static void
-send_packet_out_for_each_switch( switch_info *sw, buffer *packet, uint64_t dpid, uint16_t in_port ) {
+send_packet_out_for_each_switch( switch_info *sw, const buffer *packet, uint64_t dpid, uint16_t in_port ) {
   openflow_actions *actions = create_actions();
   int number_of_actions = foreach_port( sw->ports, build_packet_out_actions, actions, dpid, in_port );
 
-  // check if no action is build
+  // check if no action is built
   if ( number_of_actions > 0 ) {
     const uint32_t transaction_id = get_transaction_id();
     const uint32_t buffer_id = UINT32_MAX;
     const uint16_t in_port = OFPP_NONE;
 
-    fill_ether_padding( packet );
     buffer *packet_out = create_packet_out( transaction_id, buffer_id, in_port,
                                             actions, packet );
 
@@ -288,9 +300,8 @@ send_packet_out_for_each_switch( switch_info *sw, buffer *packet, uint64_t dpid,
 
 
 static void
-flood_packet( uint64_t datapath_id, uint16_t in_port, buffer *packet, list_element *switches ) {
+flood_packet( uint64_t datapath_id, uint16_t in_port, const buffer *packet, list_element *switches ) {
   foreach_switch( switches, send_packet_out_for_each_switch, packet, datapath_id, in_port );
-  free_buffer( packet );
 }
 
 
@@ -304,27 +315,38 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
   assert( user_data != NULL );
 
   routing_switch *routing_switch = user_data;
-  packet_info packet_info = get_packet_info( data );
 
   debug( "Packet-In received ( datapath_id = %#" PRIx64 ", transaction_id = %#lx, "
          "buffer_id = %#lx, total_len = %u, in_port = %u, reason = %#x, "
          "data_len = %u ).", datapath_id, transaction_id, buffer_id,
          total_len, in_port, reason, data->length );
 
-  const port_info *port = lookup_outbound_port( routing_switch->switches, datapath_id, in_port );
+  const port_info *port = lookup_port( routing_switch->switches, datapath_id, in_port );
+  if ( port == NULL ) {
+    debug( "Ignoring Packet-In from unknown port." );
+    return;
+  }
 
+  packet_info packet_info = get_packet_info( data );
   const uint8_t *src = packet_info.eth_macsa;
   const uint8_t *dst = packet_info.eth_macda;
 
-  if ( in_port <= OFPP_MAX || in_port == OFPP_LOCAL ) {
-    if ( port == NULL && !lookup_fdb( routing_switch->fdb, src, &datapath_id, &in_port ) ) {
-      debug( "Ignoring Packet-In from switch-to-switch link" );
+  if ( in_port > OFPP_MAX && in_port != OFPP_LOCAL ) {
+    error( "Packet-In from invalid port ( in_port = %u ).", in_port );
+    return;
+  }
+  if ( !port->external_link || port->switch_to_switch_reverse_link ) {
+    if ( !port->external_link
+         && port->switch_to_switch_link
+         && port->switch_to_switch_reverse_link
+         && !is_ether_multicast( dst )
+         && lookup_fdb( routing_switch->fdb, src, &datapath_id, &in_port ) ) {
+      debug( "Found a Packet-In from switch-to-switch link." );
+    }
+    else {
+      debug( "Ignoring Packet-In from not external link." );
       return;
     }
-  }
-  else {
-    error( "Packet-In from invalid port ( in_port = %#u ).", in_port );
-    return;
   }
 
   if ( !update_fdb( routing_switch->fdb, src, datapath_id, in_port ) ) {
@@ -365,7 +387,6 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
 
 authenticated:
   {
-    buffer *original_packet = duplicate_buffer( data );
     uint16_t out_port;
     uint64_t out_datapath_id;
 
@@ -373,50 +394,96 @@ authenticated:
       // Host is located, so resolve path and send flowmod
       if ( ( datapath_id == out_datapath_id ) && ( in_port == out_port ) ) {
         // in and out are same
-        free_buffer( original_packet );
         return;
       }
 
-      // Ask path resolver service to lookup a path
-      // resolve_path_replied() will be called later
-      resolve_path_replied_params *param = xmalloc( sizeof( *param ) );
-      param->routing_switch = routing_switch;
-      param->original_packet = original_packet;
-
-      resolve_path( datapath_id, in_port, out_datapath_id, out_port,
-                    param, resolve_path_replied );
-    } else {
+      make_path( routing_switch, datapath_id, in_port, out_datapath_id, out_port, data );
+    }
+    else {
       // Host's location is unknown, so flood packet
-      flood_packet( datapath_id, in_port, original_packet, routing_switch->switches );
+      flood_packet( datapath_id, in_port, data, routing_switch->switches );
     }
   }
 }
 
 
 static void
-init_outbound_ports( list_element **switches, size_t n_entries, const topology_port_status *s ) {
+init_ports( list_element **switches, size_t n_entries, const topology_port_status *s ) {
   for ( size_t i = 0; i < n_entries; i++ ) {
-    if ( s[ i ].status == TD_PORT_UP && s[ i ].external == TD_PORT_EXTERNAL ) {
-      add_outbound_port( switches, s[ i ].dpid, s[ i ].port_no );
-      set_miss_send_len_maximum( s[ i ].dpid );
+    if ( s[ i ].status == TD_PORT_UP ) {
+      add_port( switches, s[ i ].dpid, s[ i ].port_no, s[ i ].external );
     }
   }
 }
 
 
 static void
-init_last_stage( void *user_data, size_t n_entries, const topology_port_status *s ) {
+update_port_status_by_link( list_element *switches, const topology_link_status *s ) {
+  port_info *port = lookup_port( switches, s->from_dpid, s->from_portno );
+  if ( port != NULL ) {
+    debug( "Link status updated: dpid:%#" PRIx64 ", port:%u, %s",
+           s->from_dpid, s->from_portno,
+           ( s->status == TD_LINK_UP ? "up" : "down" ) );
+    port->switch_to_switch_link = ( s->status == TD_LINK_UP );
+  }
+  if ( s->to_portno == 0 ) {
+    return;
+  }
+  port_info *peer = lookup_port( switches, s->to_dpid, s->to_portno );
+  if ( peer != NULL ) {
+    debug( "Reverse link status updated: dpid:%#" PRIx64 ", port:%u, %s",
+           s->to_dpid, s->to_portno,
+           ( s->status == TD_LINK_UP ? "up" : "down" ) );
+    peer->switch_to_switch_reverse_link = ( s->status == TD_LINK_UP );
+  }
+}
+
+
+static void
+link_status_updated( void *user_data, const topology_link_status *status ) {
+  assert( user_data != NULL );
+  assert( status != NULL );
+
+  routing_switch *routing_switch = user_data;
+  update_topology( routing_switch->pathresolver, status );
+  update_port_status_by_link( routing_switch->switches, status );
+}
+
+
+static void
+update_link_status( routing_switch *routing_switch, size_t n_entries,
+                    const topology_link_status *status ) {
+  for ( size_t i = 0; i < n_entries; i++ ) {
+    update_topology( routing_switch->pathresolver, &status[ i ] );
+    update_port_status_by_link( routing_switch->switches, &status[ i ] );
+  }
+}
+
+
+static void
+init_last_stage( void *user_data, size_t n_entries, const topology_link_status *status ) {
   assert( user_data != NULL );
 
   routing_switch *routing_switch = user_data;
 
-  // Initialize outbound ports
-  init_outbound_ports( &routing_switch->switches, n_entries, s );
+  update_link_status( routing_switch, n_entries, status );
+  add_callback_link_status_updated( link_status_updated, routing_switch );
+}
+
+
+static void
+init_second_stage( void *user_data, size_t n_entries, const topology_port_status *s ) {
+  assert( user_data != NULL );
+
+  routing_switch *routing_switch = user_data;
+
+  // Initialize ports
+  init_ports( &routing_switch->switches, n_entries, s );
 
   // Initialize aging FDB
   init_age_fdb( routing_switch->fdb );
 
-  // Finally, set asynchronous event handlers
+  // Set asynchronous event handlers
   // (0) Set features_request_reply handler
   set_features_reply_handler( receive_features_reply, routing_switch );
 
@@ -428,6 +495,9 @@ init_last_stage( void *user_data, size_t n_entries, const topology_port_status *
 
   // (3) Set packet-in handler
   set_packet_in_handler( handle_packet_in, routing_switch );
+
+  // (4) Get all link status
+  get_all_link_status( init_last_stage, routing_switch );
 }
 
 
@@ -436,8 +506,8 @@ after_subscribed( void *user_data ) {
   assert( user_data != NULL );
 
   // Get all ports' status
-  // init_last_stage() will be called
-  get_all_port_status( init_last_stage, user_data );
+  // init_second_stage() will be called
+  get_all_port_status( init_second_stage, user_data );
 }
 
 
@@ -452,13 +522,16 @@ create_routing_switch( const char *topology_service, const routing_switch_option
   routing_switch->switches = NULL;
   routing_switch->fdb = NULL;
 
-  info( "idle_timeout is set to %u", routing_switch->idle_timeout );
+  info( "idle_timeout is set to %u [sec].", routing_switch->idle_timeout );
+
+  // Create pathresolver table
+  routing_switch->pathresolver = create_pathresolver();
 
   // Create forwarding database
   routing_switch->fdb = create_fdb();
 
   // Initialize port database
-  routing_switch->switches = create_outbound_ports( &routing_switch->switches );
+  routing_switch->switches = create_ports( &routing_switch->switches );
 
   // Initialize libraries
   init_libtopology( topology_service );
@@ -481,11 +554,14 @@ static void
 delete_routing_switch( routing_switch *routing_switch ) {
   assert( routing_switch != NULL );
 
+  // Delete pathresolver table
+  delete_pathresolver( routing_switch->pathresolver );
+
   // Finalize libraries
   finalize_libtopology();
 
   // Delete outbound ports
-  delete_outbound_all_ports( &routing_switch->switches );
+  delete_all_ports( &routing_switch->switches );
 
   // Delete forwarding database
   delete_fdb( routing_switch->fdb );
@@ -546,7 +622,7 @@ init_routing_switch_options( routing_switch_options *options, int *argc, char **
       case 'i':
         idle_timeout = ( uint32_t ) atoi( optarg );
         if ( idle_timeout == 0 || idle_timeout > UINT16_MAX ) {
-          printf( "Invalid idle_timeout value\n" );
+          printf( "Invalid idle_timeout value.\n" );
           usage();
           finalize_topology_service_interface_options();
           exit( EXIT_FAILURE );
