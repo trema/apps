@@ -57,10 +57,10 @@ int foreach_port( const list_element *ports,
                   openflow_actions *actions, uint64_t dpid, uint16_t port );
 void foreach_switch( const list_element *switches,
                      void ( *function )( switch_info *sw,
-                                         buffer *packet,
+                                         const buffer *packet,
                                          uint64_t dpid,
                                          uint16_t in_port ),
-                     buffer *packet, uint64_t dpid, uint16_t in_port );
+                     const buffer *packet, uint64_t dpid, uint16_t in_port );
 list_element *create_ports( list_element **switches );
 
 
