@@ -82,24 +82,37 @@ modify_flow_entry( const pathresolver_hop *h, const buffer *original_packet, uin
 
 
 static void
+send_packet_out( uint64_t datapath_id, openflow_actions *actions, const buffer *original ) {
+  const uint32_t transaction_id = get_transaction_id();
+  const uint32_t buffer_id = UINT32_MAX;
+  const uint16_t in_port = OFPP_NONE;
+  buffer *copy = NULL;
+  const buffer *packet = original;
+
+  if ( original->length + ETH_FCS_LENGTH < ETH_MINIMUM_LENGTH ) {
+    copy = duplicate_buffer( original );
+    fill_ether_padding( copy );
+    packet = copy;
+  }
+  buffer *packet_out = create_packet_out( transaction_id, buffer_id, in_port,
+                                          actions, packet );
+
+  send_openflow_message( datapath_id, packet_out );
+
+  free_buffer( packet_out );
+  if ( copy != NULL ) {
+    free_buffer( copy );
+  }
+}
+
+
+static void
 output_packet( const buffer *packet, uint64_t dpid, uint16_t port_no ) {
   openflow_actions *actions = create_actions();
   const uint16_t max_len = UINT16_MAX;
   append_action_output( actions, port_no, max_len );
 
-  const uint32_t transaction_id = get_transaction_id();
-  const uint32_t buffer_id = UINT32_MAX;
-  const uint16_t in_port = OFPP_NONE;
-
-  buffer *original_packet = duplicate_buffer( packet );
-  fill_ether_padding( original_packet );
-  buffer *packet_out = create_packet_out( transaction_id, buffer_id, in_port,
-                                          actions, original_packet );
-
-  send_openflow_message( dpid, packet_out );
-
-  free_buffer( packet_out );
-  free_buffer( original_packet );
+  send_packet_out( dpid, actions, packet );
   delete_actions( actions );
 }
 
@@ -164,7 +177,7 @@ make_path( routing_switch *routing_switch, uint64_t in_datapath_id, uint16_t in_
   uint32_t hop_count = count_hops( hops );
 
   // send flow entry from tail switch
-  for ( dlist_element *e  = get_last_element( hops ); e != NULL; e = e->prev, hop_count-- ) {
+  for ( dlist_element *e = get_last_element( hops ); e != NULL; e = e->prev, hop_count-- ) {
     uint16_t idle_timer = ( uint16_t ) ( routing_switch->idle_timeout + hop_count );
     modify_flow_entry( e->data, packet, idle_timer );
   } // for(;;)
@@ -281,21 +294,8 @@ send_packet_out_for_each_switch( switch_info *sw, const buffer *packet, uint64_t
 
   // check if no action is build
   if ( number_of_actions > 0 ) {
-    const uint32_t transaction_id = get_transaction_id();
-    const uint32_t buffer_id = UINT32_MAX;
-    const uint16_t in_port = OFPP_NONE;
-
-    buffer *original_packet = duplicate_buffer( packet );
-    fill_ether_padding( original_packet );
-    buffer *packet_out = create_packet_out( transaction_id, buffer_id, in_port,
-                                            actions, original_packet );
-
-    send_openflow_message( sw->dpid, packet_out );
-
-    free_buffer( packet_out );
-    free_buffer( original_packet );
+    send_packet_out( sw->dpid, actions, packet );
   }
-
   delete_actions( actions );
 }
 
