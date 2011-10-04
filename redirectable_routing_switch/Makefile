@@ -5,7 +5,7 @@
 TREMA = ../../trema
 
 CC = gcc
-CFLAGS = $(shell $(TREMA)/trema-config --cflags) -I../topology -std=gnu99 -D_GNU_SOURCE -Wall
+CFLAGS = $(shell $(TREMA)/trema-config --cflags) -I../topology -std=gnu99 -D_GNU_SOURCE -g -Wall
 LDFLAGS = $(shell $(TREMA)/trema-config --libs) -L../topology -ltopology -lsqlite3
 
 TARGET = redirectable_routing_switch

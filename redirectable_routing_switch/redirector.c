@@ -94,7 +94,7 @@ update_host_route( const int operation, const uint32_t ip ) {
 
   addr.sin_family = AF_INET;
   addr.sin_port = 0;
-  addr.sin_addr.s_addr = ip;
+  addr.sin_addr.s_addr = htonl( ip );
 
   memcpy( &rt.rt_dst, &addr, sizeof( struct sockaddr_in ) );
 
@@ -140,7 +140,7 @@ lookup_host( const uint32_t ip ) {
   host_entry *entry;
   struct in_addr addr;
 
-  addr.s_addr = ip;
+  addr.s_addr = htonl( ip );
 
   debug( "Looking up a host entry (ip = %s).", inet_ntoa( addr ) );
 
@@ -151,7 +151,7 @@ lookup_host( const uint32_t ip ) {
     return NULL;
   }
 
-  addr.s_addr = entry->ip;
+  addr.s_addr = htonl( entry->ip );
   uint8_t *mac = entry->mac;
   uint64_t dpid = entry->dpid;
   uint16_t port = entry->port;
@@ -171,7 +171,7 @@ add_host( const uint8_t *mac, const uint32_t ip, const uint64_t dpid, const uint
   host_entry *entry;
   struct in_addr addr;
 
-  addr.s_addr = ip;
+  addr.s_addr = htonl( ip );
 
   entry = lookup_host( ip );
 
@@ -216,7 +216,7 @@ age_host_db_entry( void *key, void *value, void *user_data ) {
 
   if ( entry->updated_at + HOST_DB_ENTRY_TIMEOUT < time( NULL ) ) {
     struct in_addr addr;
-    addr.s_addr = entry->ip;
+    addr.s_addr = htonl( entry->ip );
     debug( "Host DB: age out (ip = %s).", inet_ntoa( addr ) );
     delete_host_route( entry->ip );
     void *deleted = delete_hash_entry( host_db, key );
@@ -329,7 +329,7 @@ recv_packet_from_tun() {
   // FIXME: we need to parse the ipv4 packet.
 
   ipv4_header_t *ip_header = ( ipv4_header_t * ) data;
-  host_entry *entry = lookup_host( ip_header->daddr );
+  host_entry *entry = lookup_host( ntohl( ip_header->daddr ) );
   struct in_addr addr;
   addr.s_addr = ip_header->daddr;
 

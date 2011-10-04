@@ -45,47 +45,21 @@ typedef struct edge {
 } edge;
 
 
-struct resolve_path_param {
-  hash_table *node_table;
-  uint64_t in_dpid;
-  uint16_t in_port_no;
-  uint64_t out_dpid;
-  uint16_t out_port_no;
-  void *user_data;
-  resolve_path_callback callback;
-};
+static bool
+comp_topology( const void *x0, const void *y0 ) {
+  const topology_link_status *x = x0;
+  const topology_link_status *y = y0;
+
+  return ( x->from_dpid == y->from_dpid && x->from_portno == y->from_portno );
+}
 
 
-#ifdef UNIT_TESTING
+static unsigned int
+hash_topology( const void *key0 ) {
+  const topology_link_status *key = key0;
 
-#ifdef init_libtopology
-#undef init_libtopology
-#endif
-#define init_libtopology mock_init_libtopology
-void mock_init_libtopology( const char *service_name );
-
-#ifdef subscribe_topology
-#undef subscribe_topology
-#endif
-#define subscribe_topology mock_subscribe_topology
-void mock_subscribe_topology( void ( *callback )(), void *user_data );
-
-#ifdef finalize_libtopology
-#undef finalize_libtopology
-#endif
-#define  finalize_libtopology mock_finalize_libtopology
-void mock_finalize_libtopology( void );
-
-
-#ifdef get_all_link_status
-#undef get_all_link_status
-#endif
-#define get_all_link_status mock_get_all_link_status
-void mock_get_all_link_status( void ( *callback )(), void *user_data );
-
-#define static // export for unit test
-
-#endif  // UNIT_TESTING
+  return hash_datapath_id( &key->from_dpid ) ^ key->from_portno;
+}
 
 
 static bool
@@ -101,24 +75,7 @@ static unsigned int
 hash_node( const void *key0 ) {
   const node *key = key0;
 
-  return ( unsigned int )(( key->dpid >> 32 ) ^ ( key->dpid & 0xffffffffUL ));
-}
-
-
-static bool
-comp_edge( const void *x0, const void *y0 ) {
-  const uint64_t *x = x0;
-  const uint64_t *y = y0;
-
-  return ( *x == *y );
-}
-
-
-static unsigned int
-hash_edge( const void *key0 ) {
-  const uint64_t *key = key0;
-
-  return ( unsigned int ) ( ( *key >> 32 ) ^ ( *key & 0xffffffffUL ) );
+  return hash_datapath_id( &key->dpid );
 }
 
 
@@ -134,7 +91,7 @@ lookup_node( hash_table *node_table, const uint64_t dpid ) {
 
   key.dpid = dpid;
 
-  return ( node * )lookup_hash_entry( node_table, &key );
+  return ( node * ) lookup_hash_entry( node_table, &key );
 }
 
 
@@ -145,7 +102,7 @@ allocate_node( hash_table *node_table, const uint64_t dpid ) {
     n = xmalloc( sizeof( node ) );
 
     n->dpid = dpid;
-    n->edges = create_hash( comp_edge, hash_edge );
+    n->edges = create_hash( compare_datapath_id, hash_datapath_id );
     n->distance = UINT32_MAX;
     n->visited = false;
     n->from.node = NULL;
@@ -257,7 +214,8 @@ build_hop_list( node *src_node, uint16_t src_port_no,
 
     if ( prev_out_port != 0xffffU ) {
       hop->out_port_no = prev_out_port;
-    } else {
+    }
+    else {
       hop->out_port_no = dst_port_no;
     }
 
@@ -287,11 +245,22 @@ build_hop_list( node *src_node, uint16_t src_port_no,
 }
 
 
+static hash_table *
+create_node_table() {
+  return create_hash( comp_node, hash_node );
+}
+
+
 static void
-build_topology_table( hash_table *node_table, const topology_link_status links[], size_t nelems ) {
-  for ( size_t i = 0; i < nelems; i++ ) {
-    topology_link_status const *l = &links[ i ];
-    add_edge( node_table, l->from_dpid, l->from_portno, l->to_dpid,
+build_topology_table( pathresolver *table ) {
+  hash_iterator iter;
+  hash_entry *entry;
+
+  init_hash_iterator( table->topology_table, &iter );
+  table->node_table = create_node_table();
+  while ( ( entry = iterate_hash_next( &iter ) ) != NULL ) {
+    topology_link_status const *l = entry->value;
+    add_edge( table->node_table, l->from_dpid, l->from_portno, l->to_dpid,
               l->to_portno, calculate_link_cost( l ) );
   }
 }
@@ -325,6 +294,67 @@ dijkstra( hash_table *node_table, uint64_t in_dpid, uint16_t in_port_no,
 }
 
 
+dlist_element *
+resolve_path( pathresolver *table, uint64_t in_dpid, uint16_t in_port,
+              uint64_t out_dpid, uint16_t out_port ) {
+  assert( table != NULL );
+  assert( table->topology_table != NULL );
+  if ( table->node_table == NULL ) {
+    build_topology_table( table );
+  }
+  return dijkstra( table->node_table, in_dpid, in_port, out_dpid, out_port );
+}
+
+
+void
+free_hop_list( dlist_element *hops ) {
+  dlist_element *e = get_first_element( hops );
+  while ( e != NULL ) {
+    dlist_element *delete_me = e;
+    e = e->next;
+    if ( delete_me->data != NULL ) {
+      xfree( delete_me->data );
+    }
+    xfree( delete_me );
+  }
+}
+
+
+static hash_table *
+create_topology_table() {
+  return create_hash( comp_topology, hash_topology );
+}
+
+
+pathresolver *
+create_pathresolver() {
+  pathresolver *table = xmalloc( sizeof( pathresolver ) );
+  table->topology_table = create_topology_table();
+  table->node_table = NULL;
+
+  return table;
+}
+
+
+static void
+free_topology( hash_table *topology_table ) {
+  hash_iterator iter;
+  hash_entry *e;
+
+  init_hash_iterator( topology_table, &iter );
+  while ( ( e = iterate_hash_next( &iter ) ) != NULL ) {
+    xfree( e->value );
+  }
+}
+
+
+static void
+delete_topology_table( hash_table *topology_table ) {
+  free_topology( topology_table );
+  delete_hash( topology_table );
+}
+
+
 static void
 free_node( hash_table *node_table, node *n ) {
   if ( n == NULL ) {
@@ -347,7 +377,7 @@ free_node( hash_table *node_table, node *n ) {
 
 
 static void
-flush_topology_table( hash_table *node_table ) {
+free_all_node( hash_table *node_table ) {
   hash_iterator iter;
   hash_entry *e;
 
@@ -359,70 +389,55 @@ flush_topology_table( hash_table *node_table ) {
 }
 
 
-static hash_table *
-create_node_table() {
-  return create_hash( comp_node, hash_node );
-}
-
-
 static void
 delete_node_table( hash_table *node_table ) {
-  flush_topology_table( node_table );
+  free_all_node( node_table );
   delete_hash( node_table );
 }
 
 
-static void
-resolve_path_reply_handler( void *param0, size_t entries, const topology_link_status *s ) {
-  struct resolve_path_param *param = param0;
-  dlist_element *hops;
-
-  build_topology_table( param->node_table, s, entries );
-
-  hops = dijkstra( param->node_table, param->in_dpid, param->in_port_no,
-                   param->out_dpid, param->out_port_no );
-
-  // call user's callback
-  param->callback( param->user_data, hops );
-
-  // finalize
-  delete_node_table( param->node_table );
-
-  xfree( param0 );
-}
-
-
 bool
-resolve_path( uint64_t in_dpid, uint16_t in_port,
-              uint64_t out_dpid, uint16_t out_port,
-              void *user_data,
-              resolve_path_callback callback ) {
-  struct resolve_path_param *param = xmalloc( sizeof( *param ) );
+delete_pathresolver( pathresolver *table ) {
+  assert( table != NULL );
+  assert( table->topology_table != NULL );
 
-  param->node_table = create_node_table();
-  param->in_dpid = in_dpid;
-  param->in_port_no = in_port;
-  param->out_dpid = out_dpid;
-  param->out_port_no = out_port;
-  param->user_data = user_data;
-  param->callback = callback;
-
-  get_all_link_status( resolve_path_reply_handler, param ); // resolve_path_reply_handler() will be called later
+  if ( table->node_table != NULL ) {
+    delete_node_table( table->node_table );
+  }
+  delete_topology_table( table->topology_table );
+  xfree( table );
 
   return true;
 }
 
 
 void
-free_hop_list( dlist_element *hops ) {
-  dlist_element *e = get_first_element( hops );
-  while ( e != NULL ) {
-    dlist_element *delete_me = e;
-    e = e->next;
-    if ( delete_me->data != NULL ) {
-      xfree( delete_me->data );
+update_topology( pathresolver *table, const topology_link_status *s ) {
+  assert( table != NULL );
+  assert( table->topology_table != NULL );
+
+  bool updated = false;
+
+  hash_entry *e = lookup_hash_entry( table->topology_table, s );
+  if ( s->status == TD_LINK_UP ) {
+    if ( e == NULL ) {
+      topology_link_status *new = xmalloc( sizeof( topology_link_status ) );
+      *new = *s;
+      insert_hash_entry( table->topology_table, new, new );
+      updated = true;
     }
-    xfree( delete_me );
+  }
+  else {
+    if ( e != NULL ) {
+      topology_link_status *delete = delete_hash_entry( table->topology_table, s );
+      xfree( delete );
+      updated = true;
+    }
+  }
+
+  if ( updated && table->node_table != NULL ) {
+    delete_node_table( table->node_table );
+    table->node_table = NULL;
   }
 }
 

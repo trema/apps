@@ -32,21 +32,25 @@
 #include "doubly_linked_list.h"
 
 
-typedef struct pathresolver_hop {
+typedef struct {
+  hash_table *topology_table;
+  hash_table *node_table;
+} pathresolver;
+
+
+typedef struct {
   uint64_t dpid;
   uint16_t in_port_no;
   uint16_t out_port_no;
 } pathresolver_hop;
 
 
-typedef void ( *resolve_path_callback )( void *user_data, dlist_element *hops );
-
-
-bool resolve_path( uint64_t in_dpid, uint16_t in_port,
-                   uint64_t out_dpid, uint16_t out_port,
-                   void *user_data,
-                   resolve_path_callback callback );
+dlist_element *resolve_path( pathresolver *table, uint64_t in_dpid, uint16_t in_port,
+                             uint64_t out_dpid, uint16_t out_port );
 void free_hop_list( dlist_element *hops );
+pathresolver *create_pathresolver( void );
+bool delete_pathresolver( pathresolver *table );
+void update_topology( pathresolver *table, const topology_link_status *s );
 
 
 #endif	// LIBPATHRESOLVER_H
