@@ -91,12 +91,15 @@ output_packet( const buffer *packet, uint64_t dpid, uint16_t port_no ) {
   const uint32_t buffer_id = UINT32_MAX;
   const uint16_t in_port = OFPP_NONE;
 
+  buffer *original_packet = duplicate_buffer( packet );
+  fill_ether_padding( original_packet );
   buffer *packet_out = create_packet_out( transaction_id, buffer_id, in_port,
-                                          actions, packet );
+                                          actions, original_packet );
 
   send_openflow_message( dpid, packet_out );
 
   free_buffer( packet_out );
+  free_buffer( original_packet );
   delete_actions( actions );
 }
 
@@ -282,12 +285,15 @@ send_packet_out_for_each_switch( switch_info *sw, const buffer *packet, uint64_t
     const uint32_t buffer_id = UINT32_MAX;
     const uint16_t in_port = OFPP_NONE;
 
+    buffer *original_packet = duplicate_buffer( packet );
+    fill_ether_padding( original_packet );
     buffer *packet_out = create_packet_out( transaction_id, buffer_id, in_port,
-                                            actions, packet );
+                                            actions, original_packet );
 
     send_openflow_message( sw->dpid, packet_out );
 
     free_buffer( packet_out );
+    free_buffer( original_packet );
   }
 
   delete_actions( actions );
