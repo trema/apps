@@ -6,6 +6,7 @@ Feature: control multiple openflow switchies using routing_switch
 
 
   Scenario: One openflow switch, two servers
+  Pending
     When I try trema run "../apps/routing_switch/routing_switch" with following configuration (backgrounded):
       """
       vswitch("routing_switch") { datapath_id "0xabc" }
@@ -30,7 +31,7 @@ Feature: control multiple openflow switchies using routing_switch
     Then the content of "tx.host1.log" and "rx.host2.log" should be identical
 
 
-  Scenario: One openflow switch, two servers
+  Scenario: Four openflow switches, four servers
     When I try trema run "../apps/routing_switch/routing_switch" with following configuration (backgrounded):
       """
       vswitch("routing_switch1") { datapath_id "0x1" }
@@ -66,6 +67,39 @@ Feature: control multiple openflow switchies using routing_switch
       And I try to run "./trema show_stats host1 --tx" (log = "tx.host1.log")
       And I try to run "./trema show_stats host4 --rx" (log = "rx.host4.log")
     Then the content of "tx.host1.log" and "rx.host4.log" should be identical
+
+
+  Scenario: Five openflow switches, two servers
+    When I try trema run "../apps/routing_switch/routing_switch" with following configuration (backgrounded):
+      """
+      vswitch("routing_switch1") { datapath_id "0x1" }
+      vswitch("routing_switch2") { datapath_id "0x2" }
+      vswitch("routing_switch3") { datapath_id "0x3" }
+      vswitch("routing_switch4") { datapath_id "0x4" }
+      vswitch("routing_switch5") { datapath_id "0x5" }
+
+      vhost("host1")
+      vhost("host2")
+
+      link "routing_switch2", "host1"
+      link "routing_switch4", "host2"
+      link "routing_switch1", "routing_switch2"
+      link "routing_switch2", "routing_switch3"
+      link "routing_switch3", "routing_switch4"
+      link "routing_switch3", "routing_switch5"
+
+      app { path "../apps/topology/topology" }
+      app { path "../apps/topology/topology_discovery" }
+
+      event :port_status => "topology", :packet_in => "filter", :state_notify => "topology"
+      filter :lldp => "topology_discovery", :packet_in => "routing_switch"
+      """
+      And wait until "routing_switch" is up
+      And *** sleep 15 ***
+      And I send packets from host1 to host2 (duration = 10)
+      And I try to run "./trema show_stats host1 --tx" (log = "tx.host1.log")
+      And I try to run "./trema show_stats host2 --rx" (log = "rx.host2.log")
+    Then the content of "tx.host1.log" and "rx.host2.log" should be identical
 
 
   Scenario: routing_switch --help
