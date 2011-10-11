@@ -49,7 +49,7 @@ print_all_switch_status( void *param, size_t entries, const topology_switch_stat
     print_switch_status( &s[ i ] );
   }
 
-  stop_messenger();
+  stop_trema();
 }
 
 

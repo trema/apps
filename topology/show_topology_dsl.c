@@ -147,7 +147,7 @@ print_with_dsl_format( void *param, size_t entries, const topology_link_status *
 
   delete_hash( link_hash );
 
-  stop_messenger();
+  stop_trema();
 }
 
 
