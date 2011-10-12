@@ -80,7 +80,7 @@ actions_to_string( struct ofp_action_header *actions, uint16_t actions_length,
       {
         struct ofp_action_dl_addr *action = ( struct ofp_action_dl_addr * ) header;
         snprintf( string + strlen( string ), remaining_string_length,
-                  "set_dl_src: dl_addr=%02x:%02x%02x%02x%02x%02x",
+                  "set_dl_src: dl_addr=%02x:%02x:%02x:%02x:%02x:%02x",
                   action->dl_addr[ 0 ], action->dl_addr[ 1 ], action->dl_addr[ 2 ],
                   action->dl_addr[ 3 ], action->dl_addr[ 4 ], action->dl_addr[ 5 ] );
       }
