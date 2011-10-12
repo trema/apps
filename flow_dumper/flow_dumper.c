@@ -42,7 +42,7 @@ actions_to_string( struct ofp_action_header *actions, uint16_t actions_length,
     size_t remaining_string_length = string_length - strlen( string );
     if ( strlen( string ) > 0 && remaining_string_length > 2 ) {
       snprintf( string + strlen( string ), remaining_string_length, ", " );
-      remaining_string_length--;
+      remaining_string_length -= 2;
     }
     struct ofp_action_header *header = ( struct ofp_action_header * ) ( ( char * ) actions + offset );
     switch( header->type ) {
