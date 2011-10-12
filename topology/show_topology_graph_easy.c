@@ -111,7 +111,7 @@ print_with_graph_easy_format( void *param, size_t entries, const topology_link_s
 
   delete_hash( link_hash );
 
-  stop_messenger();
+  stop_trema();
 }
 
 

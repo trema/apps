@@ -294,14 +294,56 @@ dijkstra( hash_table *node_table, uint64_t in_dpid, uint16_t in_port_no,
 }
 
 
+static void
+free_node( hash_table *node_table, node *n ) {
+  if ( n == NULL ) {
+    return;
+  }
+
+  hash_iterator iter;
+  hash_entry *entry;
+
+  init_hash_iterator( n->edges, &iter );
+  while ( ( entry = iterate_hash_next( &iter ) ) != NULL ) {
+    edge *e = ( edge * )entry->value;
+    free_edge( n, e );
+  }
+
+  delete_hash( n->edges );
+  delete_hash_entry( node_table, n );
+  xfree( n );
+}
+
+
+static void
+free_all_node( hash_table *node_table ) {
+  hash_iterator iter;
+  hash_entry *e;
+
+  init_hash_iterator( node_table, &iter );
+  while ( ( e = iterate_hash_next( &iter ) ) != NULL ) {
+    node *n = ( node * )e->value;
+    free_node( node_table, n );
+  }
+}
+
+
+static void
+delete_node_table( hash_table *node_table ) {
+  free_all_node( node_table );
+  delete_hash( node_table );
+}
+
+
 dlist_element *
 resolve_path( pathresolver *table, uint64_t in_dpid, uint16_t in_port,
               uint64_t out_dpid, uint16_t out_port ) {
   assert( table != NULL );
   assert( table->topology_table != NULL );
-  if ( table->node_table == NULL ) {
-    build_topology_table( table );
+  if ( table->node_table != NULL ) {
+    delete_node_table( table->node_table );
   }
+  build_topology_table( table );
   return dijkstra( table->node_table, in_dpid, in_port, out_dpid, out_port );
 }
 
@@ -352,47 +394,6 @@ static void
 delete_topology_table( hash_table *topology_table ) {
   free_topology( topology_table );
   delete_hash( topology_table );
-}
-
-
-static void
-free_node( hash_table *node_table, node *n ) {
-  if ( n == NULL ) {
-    return;
-  }
-
-  hash_iterator iter;
-  hash_entry *entry;
-
-  init_hash_iterator( n->edges, &iter );
-  while ( ( entry = iterate_hash_next( &iter ) ) != NULL ) {
-    edge *e = ( edge * )entry->value;
-    free_edge( n, e );
-  }
-
-  delete_hash( n->edges );
-  delete_hash_entry( node_table, n );
-  xfree( n );
-}
-
-
-static void
-free_all_node( hash_table *node_table ) {
-  hash_iterator iter;
-  hash_entry *e;
-
-  init_hash_iterator( node_table, &iter );
-  while ( ( e = iterate_hash_next( &iter ) ) != NULL ) {
-    node *n = ( node * )e->value;
-    free_node( node_table, n );
-  }
-}
-
-
-static void
-delete_node_table( hash_table *node_table ) {
-  free_all_node( node_table );
-  delete_hash( node_table );
 }
 
 

@@ -56,7 +56,7 @@ print_all_port_status( void *param, size_t entries, const topology_port_status *
     print_port_status( &s[ i ] );
   }
 
-  stop_messenger();
+  stop_trema();
 }
 
 
