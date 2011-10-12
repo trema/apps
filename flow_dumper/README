@@ -1,0 +1,49 @@
+Flow Dumper Application
+=======================
+
+* What's this?
+
+This application retrives flow entries from all switches connected and
+outputs flow entries in text form on console terminal.
+
+* How to build
+
+  Build Trema and slicesable routing switch
+  $ git clone git://github.com/trema/trema.git trema
+  $ git clone git://github.com/trema/apps.git apps
+  $ cd trema
+  $ ./build.rb
+  $ cd ../apps/flow_dumper
+  $ make
+  $ cd ../../trema
+
+* How to run
+
+  Run a controller application developed on top of Trema which installs
+  flow entries. For example:
+  $ ./trema run -c ./src/examples/learning_switch/learning_switch.conf \
+  ./objects/examples/learning_switch/learning_switch -d
+
+  Run flow dumper
+  $ TREMA_HOME=`pwd` ../apps/flow_dumper/flow_dumper
+
+  If you have any flow entries, you can see output like follows:
+  $ TREMA_HOME=`pwd` ../apps/flow_dumper/flow_dumper
+  [0x00000000000abc] priority = 65535, match = [wildcards = 0, in_port = 1,
+  dl_src = 00:00:00:01:00:02, dl_dst = 00:00:00:01:00:01, dl_vlan = 65535,
+  dl_vlan_pcp = 0, dl_type = 0x800, nw_tos = 0, nw_proto = 17,
+  nw_src = 192.168.0.2, nw_dst = 192.168.0.1, tp_src = 1, tp_dst = 1],
+  actions = [output: port=2 max_len=65535]
+
+* License
+
+Copyright (C) 2011 NEC Corporation
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License, version 2, as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
