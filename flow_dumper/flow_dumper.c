@@ -243,6 +243,16 @@ handle_stats_reply( uint64_t datapath_id, uint32_t transaction_id,
 }
 
 
+static void
+timed_out( void *user_data ) {
+  UNUSED( user_data );
+
+  error( "timed out." );
+
+  stop_trema();
+}
+
+
 int
 main( int argc, char *argv[] ) {
   // Initialize the Trema world
@@ -254,6 +264,9 @@ main( int argc, char *argv[] ) {
 
   // Ask switch manager to obtain the list of switches
   send_list_switches_request( NULL );
+
+  // Set a timer callback
+  add_periodic_event_callback( 10, timed_out, NULL );
 
   // Main loop
   start_trema();
