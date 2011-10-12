@@ -57,16 +57,16 @@ actions_to_string( struct ofp_action_header *actions, uint16_t actions_length,
       case OFPAT_SET_VLAN_VID:
       {
         struct ofp_action_vlan_vid *action = ( struct ofp_action_vlan_vid * ) header;
-        snprintf( string + strlen( string ), remaining_string_length, "set_vlan_vid: vid=%#x",
+        snprintf( string + strlen( string ), remaining_string_length, "set_vlan_vid: vlan_vid=%#x",
                   action->vlan_vid );
       }
       break;
 
       case OFPAT_SET_VLAN_PCP:
       {
-        struct ofp_action_vlan_vid *action = ( struct ofp_action_vlan_vid * ) header;
-        snprintf( string + strlen( string ), remaining_string_length, "set_vlan_vid: vid=%#x",
-                  action->vlan_vid );
+        struct ofp_action_vlan_pcp *action = ( struct ofp_action_vlan_pcp * ) header;
+        snprintf( string + strlen( string ), remaining_string_length, "set_vlan_pcp: vlan_pcp=%#x",
+                  action->vlan_pcp );
       }
       break;
 
