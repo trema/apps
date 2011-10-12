@@ -3,12 +3,12 @@ Flow Dumper Application
 
 * What's this?
 
-This application retrives flow entries from all switches connected and
+This application retrieves flow entries from all switches connected and
 outputs flow entries in text form on console terminal.
 
 * How to build
 
-  Build Trema and slicesable routing switch
+  Build Trema and flow dumper
   $ git clone git://github.com/trema/trema.git trema
   $ git clone git://github.com/trema/apps.git apps
   $ cd trema
