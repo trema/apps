@@ -402,32 +402,16 @@ send_packet_to_tun( const void *data, size_t length ) {
 
 
 static void
-set_tun_fd( fd_set *read_set, fd_set *write_set ) {
-  UNUSED( write_set );
+read_tun_fd( int read_fd, void *user_data ) {
+  UNUSED( read_fd );
+  UNUSED( user_data );
 
   if ( fd < 0 ) {
     error( "Invalid file descripter (fd = %d).", fd );
     return;
   }
 
-#undef __FDMASK
-#define __FDMASK( d ) ( ( __fd_mask ) 1 << ( ( d ) % __NFDBITS ) )
-  FD_SET( fd, read_set );
-}
-
-
-static void
-read_tun_fd( fd_set *read_set, fd_set *write_set ) {
-  UNUSED( write_set );
-
-  if ( fd < 0 ) {
-    error( "Invalid file descripter (fd = %d).", fd );
-    return;
-  }
-
-  if ( FD_ISSET( fd, read_set ) ) {
-    recv_packet_from_tun();
-  }
+  recv_packet_from_tun();
 }
 
 
@@ -445,8 +429,8 @@ init_redirector() {
 
   host_db = create_hash( compare_ip_address, hash_ip_address );
 
-  set_fd_set_callback( set_tun_fd );
-  set_check_fd_isset_callback( read_tun_fd );
+  set_fd_handler( fd, read_tun_fd, NULL, NULL, NULL );
+  set_readable( fd, true );
 
   add_periodic_event_callback( HOST_DB_AGING_INTERVAL, age_host_db, NULL );
 
@@ -464,6 +448,11 @@ finalize_redirector() {
       xfree( entry->value );
   }
   delete_hash( host_db );
+
+  if ( fd >= 0 ) {
+    set_readable( fd, false );
+    delete_fd_handler( fd );
+  }
   
   return finalize_tun();
 }
