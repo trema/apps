@@ -130,7 +130,7 @@ print_with_dsl_format( void *param, size_t entries, const topology_link_status *
   while ( ( e = iterate_hash_next( &iter ) ) != NULL ) {
     struct dpid_entry *de = e->value;
 
-    printf( "switch {\n" );
+    printf( "vswitch {\n" );
     printf( "  datapath_id \"%#" PRIx64 "\"\n", de->dpid );
     printf( "}\n\n" );
     xfree( de );

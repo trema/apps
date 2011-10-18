@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/ether.h>
 #include <arpa/inet.h>
 #include <getopt.h>
 #include <stdio.h>
@@ -34,16 +35,22 @@
 static bool response_all_port_status_down = false;
 
 
-static char option_description[] = "  -i, --lldp_over_ip          Send LLDP messages over IP\n"
+static char option_description[] =
+                                   "  -m, --lldp_mac_dst=MAC_ADDR     Destination Mac address for sending LLDP\n"
+                                   "  -i, --lldp_over_ip          Send LLDP messages over IP\n"
                                    "  -o, --lldp_ip_src=IP_ADDR   Source IP address for sending LLDP over IP\n"
                                    "  -r, --lldp_ip_dst=IP_ADDR   Destination IP address for sending LLDP over IP\n";
-static char short_options[] = "io:r:";
+static char short_options[] = "m:io:r:";
 static struct option long_options[] = {
+  { "lldp_mac_dst", required_argument, NULL, 'm' },
   { "lldp_over_ip", no_argument, NULL, 'i' },
   { "lldp_ip_src", required_argument, NULL, 'o' },
   { "lldp_ip_dst", required_argument, NULL, 'r' },
   { NULL, 0, NULL, 0  },
 };
+
+
+static uint8_t lldp_default_dst[ ETH_ADDRLEN ] = { 0x01, 0x80, 0xc2, 0x00, 0x00, 0x0e };
 
 
 typedef struct {
@@ -113,6 +120,23 @@ reset_getopt() {
 
 
 static bool
+set_mac_address_from_string( uint8_t *address, const char *string ) {
+  assert( address != NULL );
+  assert( string != NULL );
+
+  struct ether_addr *addr = ether_aton( string );
+  if ( addr == NULL ) {
+    error( "Invalid MAC address specified." );
+    return false;
+  }
+
+  memcpy( address, addr->ether_addr_octet, ETH_ADDRLEN );
+
+  return true;
+}
+
+
+static bool
 set_ip_address_from_string( uint32_t *address, const char *string ) {
   assert( address != NULL );
   assert( string != NULL );
@@ -144,6 +168,7 @@ parse_options( topology_discovery_options *options, int *argc, char **argv[] ) {
     new_argv[ i ] = ( *argv )[ i ];
   }
 
+  memcpy( options->lldp.lldp_mac_dst, lldp_default_dst, ETH_ADDRLEN );
   options->lldp.lldp_over_ip = false;
   options->lldp.lldp_ip_src = 0;
   options->lldp.lldp_ip_dst = 0;
@@ -151,6 +176,15 @@ parse_options( topology_discovery_options *options, int *argc, char **argv[] ) {
   int c;
   while ( ( c = getopt_long( *argc, *argv, short_options, long_options, NULL ) ) != -1 ) {
     switch ( c ) {
+      case 'm':
+        if ( set_mac_address_from_string( options->lldp.lldp_mac_dst, optarg ) == false ) {
+          usage();
+          exit( EXIT_FAILURE );
+          return;
+        }
+        info( "%s is used as destination address for sending LLDP.", ether_ntoa( ( const struct ether_addr * ) options->lldp.lldp_mac_dst ) );
+        break;
+
       case 'i':
         debug( "Enabling LLDP over IP" );
         options->lldp.lldp_over_ip = true;

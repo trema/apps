@@ -18,11 +18,12 @@
  */
 
 
+#include <assert.h>
 #include <inttypes.h>
+#include <netinet/ether.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
 #include "etherip.h"
 #include "trema.h"
 #include "probe_timer_table.h"
@@ -36,8 +37,8 @@ static int parse_lldp_ull( void *str, uint64_t *value, uint32_t len );
 static int parse_lldp_us( void *str, uint16_t *value, uint32_t len );
 
 static uint16_t lldp_ethtype = ETH_ETHTYPE_LLDP;
+static uint8_t lldp_mac_dst[ ETH_ADDRLEN ];
 static bool lldp_over_ip = false;
-static uint8_t lldp_default_dst[ ETH_ADDRLEN ] = { 0x01, 0x80, 0xc2, 0x00, 0x00, 0x0e };
 static uint32_t lldp_ip_src = 0;
 static uint32_t lldp_ip_dst = 0;
 
@@ -97,11 +98,21 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
   remain_len -= sizeof( ether_header_t );
 
   if ( packet_info->eth_type == ETH_ETHTYPE_LLDP ) {
+    if ( memcmp( packet_info->eth_macda, lldp_mac_dst, ETH_ADDRLEN ) != 0 ) {
+      warn( "Unknown MAC address ( %s ).", ether_ntoa( ( const struct ether_addr *) packet_info->eth_macda ) );
+      return -1;
+    }
     lldp_tlv = packet_info->l2_payload;
   }
   else if ( packet_info->eth_type == ETH_ETHTYPE_IPV4 ) {
+    if ( packet_info->ipv4_daddr != lldp_ip_dst ||
+         packet_info->ipv4_saddr != lldp_ip_src ) {
+      warn( "Unknown IP address ( src = %#x, dst = %#x ).", packet_info->ipv4_saddr, packet_info->ipv4_daddr );
+      return -1;
+    }
+
     remain_len -= sizeof( ipv4_header_t ) + sizeof( etherip_header ) + sizeof( ether_header_t );
-    lldp_tlv = ( uint16_t * ) ( ( char * ) packet_info->l2_payload + sizeof( etherip_header ) + sizeof( ether_header_t ) );
+    lldp_tlv = ( uint16_t * ) ( ( char * ) packet_info->l3_payload + sizeof( etherip_header ) + sizeof( ether_header_t ) );
   }
   else {
     error( "Unsupported ether type ( %#x ).", packet_info->eth_type );
@@ -226,7 +237,7 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   // Create ether frame header
   ether = append_back_buffer( lldp_buf, sizeof( ether_header_t ) );
   if ( !lldp_over_ip ) {
-    memcpy( ether->macda, lldp_default_dst, ETH_ADDRLEN );
+    memcpy( ether->macda, lldp_mac_dst, ETH_ADDRLEN );
   }
   else {
     memset( ether->macda, 0xff, ETH_ADDRLEN );
@@ -252,7 +263,7 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
     etherip_header *etherip = append_back_buffer( lldp_buf, sizeof( etherip_header ) );
     etherip->version = htons( ETHERIP_VERSION );
     ether_header_t *eth = ( ether_header_t * ) ( char * ) append_back_buffer( lldp_buf, sizeof( ether_header_t ) );
-    memcpy( eth->macda, lldp_default_dst, ETH_ADDRLEN );
+    memcpy( eth->macda, lldp_mac_dst, ETH_ADDRLEN );
     memcpy( eth->macsa, mac, ETH_ADDRLEN );
     eth->type = htons( ETH_ETHTYPE_LLDP );
   }
@@ -379,6 +390,7 @@ handle_packet_in( uint64_t dst_datapath_id,
 
 bool
 init_lldp( lldp_options options ) {
+  memcpy( lldp_mac_dst, options.lldp_mac_dst, ETH_ADDRLEN );
   lldp_over_ip = options.lldp_over_ip;
   lldp_ip_src = options.lldp_ip_src;
   lldp_ip_dst = options.lldp_ip_dst;

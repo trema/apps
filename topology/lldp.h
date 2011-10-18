@@ -102,6 +102,7 @@ struct tlv {
 
 
 typedef struct {
+  uint8_t lldp_mac_dst[ ETH_ADDRLEN ];
   bool lldp_over_ip;
   uint32_t lldp_ip_src;
   uint32_t lldp_ip_dst;
