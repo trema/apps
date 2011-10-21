@@ -26,8 +26,9 @@
 #include "libtopology.h"
 
 
-void print_with_graph_easy_format( void *param, size_t entries, const topology_link_status *s );
 void print_with_dsl_format( void *param, size_t entries, const topology_link_status *s );
+void print_with_graph_easy_format( void *param, size_t entries, const topology_link_status *s );
+void print_with_csv_format( void *param, size_t entries, const topology_link_status *s );
 
 
 #endif // SHOW_TOPOLOGY_H

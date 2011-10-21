@@ -27,7 +27,7 @@ OBJS_DISCOVERY = $(SRCS_DISCOVERY:.c=.o)
 LDFLAGS_DISCOVERY = $(LDFLAGS) -L. -ltopology
 
 TARGET_SHOW = show_topology
-SRCS_SHOW = show_topology.c show_topology_dsl.c show_topology_graph_easy.c
+SRCS_SHOW = show_topology.c show_topology_dsl.c show_topology_graph_easy.c show_topology_csv.c
 OBJS_SHOW = $(SRCS_SHOW:.c=.o)
 LDFLAGS_SHOW = $(LDFLAGS) -L. -ltopology
 

@@ -32,17 +32,20 @@ typedef struct show_topology_options {
   enum output_format_type {
     dsl = 0,
     graph_easy,
+    csv,
   } output_format;
 } show_topology_options;
 
 
 static char option_description[] =
   "  -D, --dsl                   print dsl format\n"
-  "  -G, --graph-easy            print graph-easy format\n";
-static char short_options[] = "DG";
+  "  -G, --graph-easy            print graph-easy format\n"
+  "  -C, --csv                   print csv format\n";
+static char short_options[] = "DGC";
 static struct option long_options[] = {
   { "dsl", 0, NULL, 'D' },
   { "graph-easy", 0, NULL, 'G' },
+  { "csv", 0, NULL, 'C' },
   { NULL, 0, NULL, 0  },
 };
 
@@ -89,6 +92,10 @@ init_show_topology_options( show_topology_options *options, int *argc, char **ar
       options->output_format = graph_easy;
       break;
 
+    case 'C':
+      options->output_format = csv;
+      break;
+
     default:
       continue;
     }
@@ -119,6 +126,16 @@ init_show_topology_options( show_topology_options *options, int *argc, char **ar
 }
 
 
+static void
+timed_out( void *user_data ) {
+  UNUSED( user_data );
+
+  error( "timed out." );
+
+  stop_trema();
+}
+
+
 int
 main( int argc, char *argv[] ) {
   init_trema( &argc, &argv );
@@ -136,10 +153,15 @@ main( int argc, char *argv[] ) {
     get_all_link_status( print_with_graph_easy_format, NULL );
     break;
 
+  case csv:
+    get_all_link_status( print_with_csv_format, NULL );
+    break;
+
   default:
     printf( "not supported\n" );
     break;
   }
+  add_periodic_event_callback( 10, timed_out, NULL );
   
   start_trema();
 

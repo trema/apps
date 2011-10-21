@@ -6,7 +6,6 @@ Feature: control multiple openflow switchies using routing_switch
 
 
   Scenario: One openflow switch, two servers
-  Pending
     When I try trema run "../apps/routing_switch/routing_switch" with following configuration (backgrounded):
       """
       vswitch("routing_switch") { datapath_id "0xabc" }
