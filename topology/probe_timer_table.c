@@ -421,7 +421,6 @@ probe_timer_entry *
 delete_probe_timer_entry( const uint64_t *datapath_id, uint16_t port_no ) {
   dlist_element *dlist;
   probe_timer_entry *entry;
-  bool top = true;
   for ( dlist = probe_timer_table->next; dlist != NULL; dlist = dlist->next ) {
     entry = dlist->data;
     if ( entry->datapath_id == *datapath_id && entry->port_no == port_no ) {
@@ -431,7 +430,6 @@ delete_probe_timer_entry( const uint64_t *datapath_id, uint16_t port_no ) {
       delete_dlist_element( dlist );
       return entry;
     }
-    top = false;
   }
 
   return NULL;
