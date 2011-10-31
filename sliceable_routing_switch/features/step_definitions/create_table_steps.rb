@@ -48,10 +48,16 @@ Given /^the following mac binding records$/ do | table |
 end
 
 
+
 Given /^the following port and mac binding records$/ do | table |
   table.hashes.each do | hash |
     slice_add_port_mac hash
   end
+end
+
+
+Given /^the slice table from script "([^"]*)"$/ do | script |
+  create_slice_table_from script
 end
 
 

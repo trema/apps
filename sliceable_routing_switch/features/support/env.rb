@@ -83,6 +83,22 @@ def create_slice_table
 end
 
 
+def create_filter_table_from script
+  if FileTest.exists?( filter_db_file )
+    File.delete filter_db_file
+  end
+  run "#{ script } | sqlite3 #{ filter_db_file }"
+end
+
+
+def create_slice_table_from script
+  if FileTest.exists?( slice_db_file )
+    File.delete slice_db_file
+  end
+  run "#{ script } | sqlite3 #{ slice_db_file }"
+end
+
+
 ENV[ "SLICE_DB_FILE" ] = slice_db_file
 ENV[ "FILTER_DB_FILE" ] = filter_db_file
 ENV[ "PERL5LIB" ] = src_directory
