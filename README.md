@@ -28,6 +28,7 @@ Please keep the list sorted.
 
 * Kazushi Sugyo
 * Shuji Ishii
+* Lei Sun
 * Yasuhito Takamiya <yasuhito@gmail.com>
 * Yasunobu Chiba
 

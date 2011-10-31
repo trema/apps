@@ -1,0 +1,15 @@
+Usage:
+  slice list
+  slice create SLICE_ID [DESCRIPTION]
+  slice modify SLICE_ID DESCRIPTION
+  slice destroy SLICE_ID
+  slice add-port SLICE_ID DPID PORT VID [BINDING_ID]
+  slice delete-port SLICE_ID BINDING_ID
+  slice show-port SLICE_ID [BINDING_ID]
+  slice add-mac SLICE_ID ADDRESS [BINDING_ID]
+  slice delete-mac SLICE_ID BINDING_ID
+  slice add-port-mac SLICE_ID PORT_BINDING_ID ADDRESS [BINDING_ID]
+  slice delete-port-mac SLICE_ID PORT_BINDING_ID BINDING_ID
+  slice show-port-mac SLICE_ID PORT_BINDING_ID [BINDING_ID]
+  slice show-mac SLICE_ID [BINDING_ID]
+  slice show SLICE_ID

@@ -1,0 +1,403 @@
+A filter entry is added successfully.
+filter help
+show default
+[default]
+            priority: 0
+       ofp_wildcards: 0x3fffff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:32,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 0.0.0.0/0
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+dl_src filter
+A filter entry is added successfully.
+A filter entry is deleted successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+show default
+[default]
+            priority: 0
+       ofp_wildcards: 0x3fffff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:32,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 0.0.0.0/0
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: DENY
+
+show host1_mac
+[host1_mac]
+            priority: 65535
+       ofp_wildcards: 0x3ffffb (in_port,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:32,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:01
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 0.0.0.0/0
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+show host2_mac
+[host2_mac]
+            priority: 65535
+       ofp_wildcards: 0x3ffffb (in_port,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:32,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:02
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 0.0.0.0/0
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+show host3_mac
+[host3_mac]
+            priority: 65535
+       ofp_wildcards: 0x3ffffb (in_port,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:32,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:03
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 0.0.0.0/0
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+show host4_mac
+[host4_mac]
+            priority: 65535
+       ofp_wildcards: 0x3ffffb (in_port,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:32,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:04
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 0.0.0.0/0
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+show host5_mac
+[host5_mac]
+            priority: 65535
+       ofp_wildcards: 0x3ffffb (in_port,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:32,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:05
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 0.0.0.0/0
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+nw_src filter
+A filter entry is added successfully.
+A filter entry is deleted successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+A filter entry is added successfully.
+show default
+[default]
+            priority: 0
+       ofp_wildcards: 0x3fffff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:32,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 0.0.0.0/0
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: DENY
+
+show host1_ip
+[host1_ip]
+            priority: 32768
+       ofp_wildcards: 0x3fc0ff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 192.168.0.1
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+show host2_ip
+[host2_ip]
+            priority: 32768
+       ofp_wildcards: 0x3fc0ff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 192.168.0.2
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+show host3_ip
+[host3_ip]
+            priority: 32768
+       ofp_wildcards: 0x3fc0ff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 192.168.0.3
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+show host4_ip
+[host4_ip]
+            priority: 32768
+       ofp_wildcards: 0x3fc0ff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 192.168.0.4
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+show host5_ip
+[host5_ip]
+            priority: 32768
+       ofp_wildcards: 0x3fc0ff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 192.168.0.5
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+show network10
+[network10]
+            priority: 36864
+       ofp_wildcards: 0x3fd8ff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:24,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 10.0.0.0/8
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+show network127
+[network127]
+            priority: 61440
+       ofp_wildcards: 0x3fd8ff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:24,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 127.0.0.0/8
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: DENY
+
+show network169_254
+[network169_254]
+            priority: 28672
+       ofp_wildcards: 0x3fd0ff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:16,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 169.254.0.0/16
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+show network172_16
+[network172_16]
+            priority: 28672
+       ofp_wildcards: 0x3fd4ff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:20,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 172.16.0.0/12
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: ALLOW
+
+show network192_168
+[network192_168]
+            priority: 28672
+       ofp_wildcards: 0x3fd0ff (in_port,dl_src,dl_dst,dl_vlan,dl_vlan_pcp,dl_type,nw_tos,nw_proto,nw_src:16,nw_dst:32,tp_src,tp_dst)
+             in_port: 0
+              dl_src: 00:00:00:00:00:00
+              dl_dst: 00:00:00:00:00:00
+             dl_vlan: 0
+         dl_vlan_pcp: 0
+             dl_type: 0
+              nw_tos: 0
+            nw_proto: 0
+              nw_src: 192.168.0.0/16
+              nw_dst: 0.0.0.0/0
+              tp_src: 0
+              tp_dst: 0
+           wildcards: 0x3 (in_datapath_id,slice)
+      in_datapath_id: 0
+               slice: UNDEFINED (0)
+              action: DENY
+

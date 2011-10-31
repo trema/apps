@@ -1,0 +1,118 @@
+A filter entry is added successfully.
+slice help
+create mac binding tables
+A filter entry is added successfully.
+A new slice is created successfully.
+A MAC-based binding is added successfully.
+A MAC-based binding is added successfully.
+show mac_binding
+[Description]
+Mac binding
+
+[Port-based bindings]
+No bindings found.
+
+[MAC-based bindings]
+                      ID	                 MAC
+                   host2	   00:00:00:00:00:02
+                   host1	   00:00:00:00:00:01
+
+[MAC-based bindings on ports]
+No bindings found.
+
+create port binding tables
+A filter entry is added successfully.
+A new slice is created successfully.
+A port is added successfully.
+A port is added successfully.
+show port_binding
+[Description]
+Port binding
+
+[Port-based bindings]
+                      ID	         Datapath ID	    Port	     VID
+                   host4	               0xabc	       4	   65535
+                   host3	               0xabc	       3	   65535
+
+[MAC-based bindings]
+No bindings found.
+
+[MAC-based bindings on ports]
+No bindings found.
+
+create port and mac binding tables
+A filter entry is added successfully.
+A new slice is created successfully.
+A MAC-based binding is added successfully.
+A port is added successfully.
+show port_mac_binding
+[Description]
+Port and mac binding
+
+[Port-based bindings]
+                      ID	         Datapath ID	    Port	     VID
+                   host6	               0xabc	       5	   65535
+
+[MAC-based bindings]
+                      ID	                 MAC
+                   host5	   00:00:00:00:00:05
+
+[MAC-based bindings on ports]
+No bindings found.
+
+three slice
+A filter entry is added successfully.
+A new slice is created successfully.
+A MAC-based binding is added successfully.
+A MAC-based binding is added successfully.
+A new slice is created successfully.
+A port is added successfully.
+A port is added successfully.
+A new slice is created successfully.
+A MAC-based binding is added successfully.
+A port is added successfully.
+show mac_binding
+[Description]
+Mac binding
+
+[Port-based bindings]
+No bindings found.
+
+[MAC-based bindings]
+                      ID	                 MAC
+                   host2	   00:00:00:00:00:02
+                   host1	   00:00:00:00:00:01
+
+[MAC-based bindings on ports]
+No bindings found.
+
+show port_binding
+[Description]
+Port binding
+
+[Port-based bindings]
+                      ID	         Datapath ID	    Port	     VID
+                   host4	               0xabc	       4	   65535
+                   host3	               0xabc	       3	   65535
+
+[MAC-based bindings]
+No bindings found.
+
+[MAC-based bindings on ports]
+No bindings found.
+
+show port_mac_binding
+[Description]
+Port and mac binding
+
+[Port-based bindings]
+                      ID	         Datapath ID	    Port	     VID
+                   host6	               0xabc	       5	   65535
+
+[MAC-based bindings]
+                      ID	                 MAC
+                   host5	   00:00:00:00:00:05
+
+[MAC-based bindings on ports]
+No bindings found.
+

@@ -1,0 +1,1 @@
+[{"priority":0,"nw_dst":"1.1.1.1","wildcards":"in_datapath_id","ofp_wildcards":"in_port,nw_tos,tp_src,tp_dst","dl_src":"00:00:00:00:00:00","slice":"slice1","nw_proto":0,"dl_dst":"00:00:00:00:00:00","id":"13176184135067690516","in_datapath_id":0,"nw_tos":0,"dl_vlan":0,"in_port":0,"dl_vlan_pcp":0,"action":"DENY","tp_src":0,"dl_type":0,"nw_src":"10.0.0.2","tp_dst":0}]

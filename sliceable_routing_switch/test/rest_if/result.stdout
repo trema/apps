@@ -1,0 +1,91 @@
+#### BEGIN: GET http://127.0.0.1:8888/networks ####
+Status: 200 OK
+Content:
+[]
+
+#### END: GET http://127.0.0.1:8888/networks ####
+
+#### BEGIN: POST http://127.0.0.1:8888/networks ####
+Status: 202 Accepted
+Content:
+{"id":"slice_created_via_rest_if","description":"description here"}
+
+#### END: POST http://127.0.0.1:8888/networks ####
+
+#### BEGIN: POST http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports ####
+Status: 202 Accepted
+#### END: POST http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports ####
+
+#### BEGIN: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports ####
+Status: 200 OK
+Content:
+[{"vid":65535,"datapath_id":"1024","id":"port_created_via_rest_if","port":1}]
+
+#### END: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports ####
+
+#### BEGIN: POST http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports/port_created_via_rest_if/attachments ####
+Status: 202 Accepted
+#### END: POST http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports/port_created_via_rest_if/attachments ####
+
+#### BEGIN: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports/port_created_via_rest_if/attachments ####
+Status: 200 OK
+Content:
+[{"id":"port_mac_created_via_rest_if","mac":"01:01:01:01:01:01"}]
+
+#### END: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports/port_created_via_rest_if/attachments ####
+
+#### BEGIN: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports/port_created_via_rest_if/attachments/port_mac_created_via_rest_if ####
+Status: 200 OK
+Content:
+{"id":"port_mac_created_via_rest_if","mac":"01:01:01:01:01:01"}
+
+#### END: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports/port_created_via_rest_if/attachments/port_mac_created_via_rest_if ####
+
+#### BEGIN: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports/port_created_via_rest_if ####
+Status: 200 OK
+Content:
+{"attachments":[{"id":"port_mac_created_via_rest_if","mac":"01:01:01:01:01:01"}],"config":{"vid":65535,"datapath_id":"1024","port":1}}
+
+#### END: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports/port_created_via_rest_if ####
+
+#### BEGIN: POST http://127.0.0.1:8888/networks/slice_created_via_rest_if/attachments ####
+Status: 202 Accepted
+#### END: POST http://127.0.0.1:8888/networks/slice_created_via_rest_if/attachments ####
+
+#### BEGIN: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if/attachments ####
+Status: 200 OK
+Content:
+[{"id":"mac_created_via_rest_if","mac":"01:00:00:00:00:01"}]
+
+#### END: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if/attachments ####
+
+#### BEGIN: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if/attachments/mac_created_via_rest_if ####
+Status: 200 OK
+Content:
+{"id":"mac_created_via_rest_if","mac":"01:00:00:00:00:01"}
+
+#### END: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if/attachments/mac_created_via_rest_if ####
+
+#### BEGIN: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if ####
+Status: 200 OK
+Content:
+{"bindings":[{"type":2,"id":"mac_created_via_rest_if","mac":"01:00:00:00:00:01"},{"vid":65535,"datapath_id":"1024","type":4,"id":"port_mac_created_via_rest_if","mac":"01:01:01:01:01:01","port":1},{"vid":65535,"datapath_id":"1024","type":1,"id":"port_created_via_rest_if","port":1}],"description":"description here"}
+
+#### END: GET http://127.0.0.1:8888/networks/slice_created_via_rest_if ####
+
+#### BEGIN: DELETE http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports/port_created_via_rest_if/attachments/port_mac_created_via_rest_if ####
+Status: 202 Accepted
+#### END: DELETE http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports/port_created_via_rest_if/attachments/port_mac_created_via_rest_if ####
+
+#### BEGIN: DELETE http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports/port_created_via_rest_if ####
+Status: 202 Accepted
+#### END: DELETE http://127.0.0.1:8888/networks/slice_created_via_rest_if/ports/port_created_via_rest_if ####
+
+#### BEGIN: DELETE http://127.0.0.1:8888/networks/slice_created_via_rest_if/attachments/mac_created_via_rest_if ####
+Status: 202 Accepted
+#### END: DELETE http://127.0.0.1:8888/networks/slice_created_via_rest_if/attachments/mac_created_via_rest_if ####
+
+#### BEGIN: DELETE http://127.0.0.1:8888/networks/slice_created_via_rest_if ####
+Status: 202 Accepted
+#### END: DELETE http://127.0.0.1:8888/networks/slice_created_via_rest_if ####
+

@@ -1,0 +1,224 @@
+#! /usr/bin/perl
+#
+# Packet filter configuration command for sliceable routing switch application.
+#
+# Author: Yasunobu Chiba
+#
+# Copyright (C) 2011 NEC Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 2, as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+use strict;
+use warnings;
+use bignum;
+use Filter;
+
+my $Debug = 0;
+
+my $FilterDBFile = "filter.db";
+my $SliceDBFile = "slice.db";
+my $Filter;
+
+&main();
+
+sub main(){
+    if(defined($ENV{'FILTER_DB_FILE'})){
+	$FilterDBFile = $ENV{'FILTER_DB_FILE'};
+    }
+    if(defined($ENV{'SLICE_DB_FILE'})){
+	$SliceDBFile = $ENV{'SLICE_DB_FILE'};
+    }
+
+    my $filter = Filter->new($FilterDBFile, $SliceDBFile);
+    if(!defined($filter)){
+	error("Failed to open filter database.");
+	exit;
+    }
+
+    my $Filter = $filter;
+    my $action = $ARGV[0];
+
+    if(!defined($action)){
+	usage_and_exit();
+    }
+
+    if($action eq "add"){
+	my $id;
+	if(defined($ARGV[1]) && $ARGV[1] !~ /=/){
+	    $id = $ARGV[1];
+	}
+	my @criteria = get_filter_criteria(@ARGV);
+	@criteria = $filter->set_default_filter_criteria(@criteria);
+	my $ret = $filter->add_filter(@criteria, $id);
+	if($ret == Filter::NO_SLICE_FOUND){
+	    error("No slice found.");
+	}
+	elsif($ret == Filter::UNDEFINED_ACTION){
+	    error("Undefined action specified.");
+	}
+	elsif($ret < 0){
+	    error("Failed to add a filter entry.");
+	}
+	else{
+	    info("A filter entry is added successfully.");
+	}
+    }
+    elsif($action eq "delete"){
+	if(defined($ARGV[1]) && $ARGV[1] !~ /=/){
+	    my $ret = $filter->delete_filter_by_id($ARGV[1]);
+	    if($ret < 0){
+		error("Failed to delete a filter entry.");
+	    }
+	    else{
+		info("A filter entry is deleted successfully.");
+	    }
+	}
+	else{
+	    my @criteria = get_filter_criteria(@ARGV);
+	    my $ret = $filter->delete_filters(@criteria);
+	    if($ret == Filter::NO_SLICE_FOUND){
+		error("No slice found.");
+	    }
+	    elsif($ret == Filter::UNDEFINED_ACTION){
+		error("Undefined action specified.");
+	    }
+	    elsif($ret < 0){
+		error("Failed to delete filter entries.");
+	    }
+	    else{
+		info("Filter entries are deleted successfully.");
+	    }
+	}
+    }
+    elsif($action eq "list"){
+	usage_and_exit() if @ARGV != 1;
+	$filter->list_filters();
+    }
+    elsif($action eq "show"){
+	usage_and_exit() if @ARGV > 2;
+	my $id = $ARGV[1];
+	$filter->show_filters($id);
+    }
+    else{
+	usage_and_exit();
+    }
+
+    $filter->close();
+}
+
+
+sub get_filter_criteria(){
+    my @arguments = @_;
+    shift(@arguments);
+
+    my @criteria = ();
+    $#criteria = 17;
+    foreach my $arg (@arguments){
+	if($arg =~ /^priority=(.+)/){
+	    $criteria[0] = oct($1);
+	}
+	if($arg =~ /^ofp_wildcards=(.+)/){
+	    $criteria[1] = $1;
+	}
+	if($arg =~/^in_port=(.+)/){
+	    $criteria[2] = oct($1);
+	}
+	if($arg =~/^dl_src=(.+)/){
+	    $criteria[3] = $1;
+	}
+	if($arg =~/^dl_dst=(.+)/){
+	    $criteria[4] = $1;
+	}
+	if($arg =~/^dl_vlan=(.+)/){
+	    $criteria[5] = oct($1);
+	}
+	if($arg =~/^dl_vlan_pcp=(.+)/){
+	    $criteria[6] = oct($1);
+	}
+	if($arg =~/^dl_type=(.+)/){
+	    $criteria[7] = oct($1);
+	}
+	if($arg =~/^nw_tos=(.+)/){
+	    $criteria[8] = oct($1);
+	}
+	if($arg =~/^nw_proto=(.+)/){
+	    $criteria[9] = oct($1);
+	}
+	if($arg =~/^nw_src=(.+)/){
+	    $criteria[10] = $1;
+	}
+	if($arg =~/^nw_dst=(.+)/){
+	    $criteria[11] = $1;
+	}
+	if($arg =~/^tp_src=(.+)/){
+	    $criteria[12] = oct($1);
+	}
+	if($arg =~/^tp_dst=(.+)/){
+	    $criteria[13] = oct($1);
+	}
+	if($arg =~/^wildcards=(.+)/){
+	    $criteria[14] = $1;
+	}
+	if($arg =~/^in_datapath_id=(.+)/){
+	    $criteria[15] = oct($1);
+	}
+	if($arg =~/^slice=(.+)/){
+	    $criteria[16] = $1;
+	}
+	if($arg =~/^action=(.+)/){
+	    $criteria[17] = $1;
+	}
+    }
+
+    return @criteria;
+}
+
+
+sub usage_and_exit(){
+    if(defined($Filter)){
+	$Filter->close();
+    }
+    usage();
+    exit;
+}
+
+
+sub usage(){
+    printf(STDERR "Usage:\n");
+    printf(STDERR "  filter list\n");
+    printf(STDERR "  filter show [FILTER_ID]\n");
+    printf(STDERR "  filter add [FILTER_ID] [FILTER_CRITERIA]\n");
+    printf(STDERR "  filter delete [FILTER_ID] [FILTER_CRITERIA]\n");
+}
+
+
+sub debug(){
+    if($Debug){
+	printf(@_);
+	printf("\n");
+    }
+}
+
+
+sub info(){
+    printf(@_);
+    printf("\n");
+}
+
+
+sub error(){
+    printf(STDERR @_);
+    printf(STDERR "\n");
+}

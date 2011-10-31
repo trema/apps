@@ -1,0 +1,61 @@
+/*
+ * Copyright (c) 2011 NEC Corporation
+ */
+
+body 
+{
+    background-color: #f8f8ff;
+    border: 0px;
+    margin: 0px;
+    padding: 10px;
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 62.5%;
+}
+
+#footer
+{
+    font-size: 11px;
+    margin: 0px;
+    text-align: right;
+    background: #f5f5f5;
+    color: #808080;
+}
+
+p
+{
+    margin-left: 10px;
+    margin-right: 30px;
+    font-size: 12px;
+}
+
+p.text
+{
+    margin-left: 20px;
+}
+
+p.center
+{
+    text-align: center;
+}
+
+h1.title
+{
+    font-size : 20pt;
+    border-left: 10px solid #1414a0;
+    border-bottom: 1px solid #1414a0;
+    padding: 2px 0 2px 10px;
+    line-height: 120%;
+    margin-top: 0px;
+    margin-bottom: 8px;
+    border-top: 0px;
+}
+
+h2.title
+{
+    font-size : 16pt;
+}
+
+h3.title
+{
+    font-size : 14pt;
+}
