@@ -1,0 +1,11 @@
+*.a
+*.o
+*.swp
+*~
+.depends
+flow_manager
+examples/example1
+examples/example2
+examples/example3
+examples/example4
+examples/example5
