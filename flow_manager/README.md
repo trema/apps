@@ -64,14 +64,14 @@ How to build
 How to run examples
 -------------------
 
-  $ ./trema run -c ../apps/flow_manager/flow_manager.conf -d
-  $ export TREMA_HOME=`pwd`
-  $ cd ../apps/flow_manager/examples
-  $ ./example1
-  $ ./example2
-  $ ./example3
-  $ ./example4
-  $ ./example5
+    $ ./trema run -c ../apps/flow_manager/flow_manager.conf -d
+    $ export TREMA_HOME=`pwd`
+    $ cd ../apps/flow_manager/examples
+    $ ./example1
+    $ ./example2
+    $ ./example3
+    $ ./example4
+    $ ./example5
 
 All examples show how to setup or teardown paths through libpath.
 
