@@ -45,6 +45,10 @@ typedef struct edge {
 } edge;
 
 
+static const unsigned int bucket_size_of_datapath_id = 71;
+static const unsigned int bucket_size_of_node = 743;
+
+
 static bool
 comp_topology( const void *x0, const void *y0 ) {
   const topology_link_status *x = x0;
@@ -102,7 +106,7 @@ allocate_node( hash_table *node_table, const uint64_t dpid ) {
     n = xmalloc( sizeof( node ) );
 
     n->dpid = dpid;
-    n->edges = create_hash( compare_datapath_id, hash_datapath_id );
+    n->edges = create_hash_with_size( compare_datapath_id, hash_datapath_id, bucket_size_of_datapath_id );
     n->distance = UINT32_MAX;
     n->visited = false;
     n->from.node = NULL;
@@ -247,7 +251,7 @@ build_hop_list( node *src_node, uint16_t src_port_no,
 
 static hash_table *
 create_node_table() {
-  return create_hash( comp_node, hash_node );
+  return create_hash_with_size( comp_node, hash_node, bucket_size_of_node );
 }
 
 
