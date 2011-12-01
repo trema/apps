@@ -84,7 +84,6 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
     const char *service_name = element->data;
     if ( !send_message( service_name, MESSENGER_OPENFLOW_MESSAGE,
                         buf->data, buf->length ) ) {
-      error( "Failed to send a message to %s.", service_name );
       free_buffer( buf );
       return;
     }

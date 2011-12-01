@@ -321,6 +321,11 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
          "data_len = %u ).", datapath_id, transaction_id, buffer_id,
          total_len, in_port, reason, data->length );
 
+  if ( in_port > OFPP_MAX && in_port != OFPP_LOCAL ) {
+    error( "Packet-In from invalid port ( in_port = %u ).", in_port );
+    return;
+  }
+
   const port_info *port = lookup_port( routing_switch->switches, datapath_id, in_port );
   if ( port == NULL ) {
     debug( "Ignoring Packet-In from unknown port." );
@@ -331,10 +336,6 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
   const uint8_t *src = packet_info.eth_macsa;
   const uint8_t *dst = packet_info.eth_macda;
 
-  if ( in_port > OFPP_MAX && in_port != OFPP_LOCAL ) {
-    error( "Packet-In from invalid port ( in_port = %u ).", in_port );
-    return;
-  }
   if ( !port->external_link || port->switch_to_switch_reverse_link ) {
     if ( !port->external_link
          && port->switch_to_switch_link

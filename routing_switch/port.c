@@ -27,7 +27,6 @@
 #include <inttypes.h>
 #include <sys/types.h>
 #include "trema.h"
-#include "fdb.h"
 #include "port.h"
 #include "topology_service_interface.h"
 
