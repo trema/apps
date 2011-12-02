@@ -66,11 +66,14 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
                   uint16_t in_port, uint8_t reason, const buffer *data,
                   void *user_data ) {
   services *services = user_data;
-  list_element *list_head = services->arp_or_unicast;
+  list_element **list_head = &services->arp_or_unicast;
 
   packet_info *packet_info = data->user_data;
   if ( !packet_type_arp( data ) && ( packet_info->eth_macda[ 0 ] & 0x1 ) == 0x1 ) {
-    list_head = services->broadcast;
+    list_head = &services->broadcast;
+  }
+  if ( *list_head == NULL ) {
+    return;
   }
   buffer *buf = create_packet_in( transaction_id, buffer_id, total_len, in_port,
                                   reason, data );
@@ -79,19 +82,16 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
   message = append_front_buffer( buf, sizeof( openflow_service_header_t ) );
   message->datapath_id = htonll( datapath_id );
   message->service_name_length = htons( 0 );
-  list_element *element;
-  for ( element = list_head; element != NULL; element = element->next ) {
-    const char *service_name = element->data;
-    if ( !send_message( service_name, MESSENGER_OPENFLOW_MESSAGE,
-                        buf->data, buf->length ) ) {
-      free_buffer( buf );
-      return;
-    }
-  
+  char *service_name = ( *list_head )->data;
+  if ( send_message( service_name, MESSENGER_OPENFLOW_MESSAGE, buf->data, buf->length ) ) {
     debug( "Sending a message to %s.", service_name );
   }
-
   free_buffer( buf );
+  if ( ( *list_head )->next != NULL ) {
+    //round robin
+    delete_element( list_head, service_name );
+    append_to_tail( list_head, service_name );
+  }
 }
 
 
