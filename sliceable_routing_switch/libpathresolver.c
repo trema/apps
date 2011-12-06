@@ -344,6 +344,15 @@ resolve_path( pathresolver *table, uint64_t in_dpid, uint16_t in_port,
               uint64_t out_dpid, uint16_t out_port ) {
   assert( table != NULL );
   assert( table->topology_table != NULL );
+  if ( in_dpid == out_dpid ) {
+    dlist_element *h = create_dlist();
+    pathresolver_hop *hop = xmalloc( sizeof( pathresolver_hop ) );
+    hop->dpid = in_dpid;
+    hop->in_port_no = in_port;
+    hop->out_port_no = out_port;
+    h->data = hop;
+    return h;
+  }
   if ( table->node_table != NULL ) {
     delete_node_table( table->node_table );
   }

@@ -200,16 +200,6 @@ discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet 
 static void
 make_path( routing_switch *routing_switch, uint64_t in_datapath_id, uint16_t in_port, uint16_t in_vid,
            uint64_t out_datapath_id, uint16_t out_port, uint16_t out_vid, const buffer *packet ) {
-  if ( in_datapath_id == out_datapath_id ) {
-    pathresolver_hop h;
-    h.dpid = in_datapath_id;
-    h.in_port_no = in_port;
-    h.out_port_no = out_port;
-    modify_flow_entry( &h, packet, routing_switch->idle_timeout, out_vid );
-    output_packet_from_last_switch( &h, packet, out_vid );
-    return;
-  }
-
   dlist_element *hops = resolve_path( routing_switch->pathresolver, in_datapath_id, in_port, out_datapath_id, out_port );
   if ( hops == NULL ) {
     warn( "No available path found ( %#" PRIx64 ":%u -> %#" PRIx64 ":%u ).",

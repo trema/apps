@@ -28,6 +28,10 @@ Feature: control multiple openflow switchies using routing_switch
       And I try to run "./trema show_stats host1 --tx" (log = "tx.host1.log")
       And I try to run "./trema show_stats host2 --rx" (log = "rx.host2.log")
     Then the content of "tx.host1.log" and "rx.host2.log" should be identical
+      And I send packets from host2 to host1 (duration = 10)
+      And I try to run "./trema show_stats host2 --tx" (log = "tx.host2.log")
+      And I try to run "./trema show_stats host1 --rx" (log = "rx.host1.log")
+    Then the content of "tx.host2.log" and "rx.host1.log" should be identical
 
 
   Scenario: Four openflow switches, four servers
