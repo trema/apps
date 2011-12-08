@@ -308,6 +308,7 @@ finalize_tun() {
     error( "Cannot close tun device (fd = %d).", fd );
     return false;
   }
+  fd = -1;
 
   return true;
 }
@@ -448,6 +449,7 @@ finalize_redirector() {
       xfree( entry->value );
   }
   delete_hash( host_db );
+  host_db = NULL;
 
   if ( fd >= 0 ) {
     set_readable( fd, false );

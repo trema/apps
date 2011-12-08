@@ -112,6 +112,7 @@ delete_authorized_host_db() {
   delete_hash( authorized_host_db );
 
   authorized_host_db = NULL;
+  last_authorized_host_db_mtime = 0;
 
   return true;
 }
