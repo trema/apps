@@ -179,7 +179,7 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
       break;
 
     default:
-      warn( "Unknown LLDP type (%#x).", type );
+      debug( "Unknown LLDP type (%#x).", type );
       return -1;
     }
 
