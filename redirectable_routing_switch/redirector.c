@@ -443,12 +443,20 @@ bool
 finalize_redirector() {
   hash_iterator iter;
   hash_entry *entry;
+  host_entry *host_entry;
 
-  init_hash_iterator( host_db, &iter );
-  while ( ( entry = iterate_hash_next( &iter ) ) != NULL ) {
-      xfree( entry->value );
+  if ( host_db != NULL ) {
+    delete_periodic_event_callback( age_host_db );
+    init_hash_iterator( host_db, &iter );
+    while ( ( entry = iterate_hash_next( &iter ) ) != NULL ) {
+      host_entry = entry->value;
+      if ( host_entry != NULL ) {
+        delete_host_route( host_entry->ip );
+        xfree( host_entry );
+      }
+    }
+    delete_hash( host_db );
   }
-  delete_hash( host_db );
   host_db = NULL;
 
   if ( fd >= 0 ) {
