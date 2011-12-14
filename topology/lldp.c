@@ -99,7 +99,7 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
 
   if ( packet_info->eth_type == ETH_ETHTYPE_LLDP ) {
     if ( memcmp( packet_info->eth_macda, lldp_mac_dst, ETH_ADDRLEN ) != 0 ) {
-      warn( "Unknown MAC address ( %s ).", ether_ntoa( ( const struct ether_addr *) packet_info->eth_macda ) );
+      debug( "Unknown MAC address ( %s ).", ether_ntoa( ( const struct ether_addr *) packet_info->eth_macda ) );
       return -1;
     }
     lldp_tlv = packet_info->l2_payload;
