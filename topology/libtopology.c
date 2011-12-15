@@ -417,8 +417,11 @@ bool
 finalize_libtopology() {
   xfree( topology_name );
   topology_name = NULL;
+  delete_message_received_callback( libtopology_queue_name, recv_status_notification );
+  delete_message_replied_callback( libtopology_queue_name, recv_reply );
   xfree( libtopology_queue_name );
   libtopology_queue_name = NULL;
+  delete_periodic_event_callback( check_transaction_table );
   delete_hash( transaction_table );
   transaction_table = NULL;
 
