@@ -48,7 +48,7 @@
 #define LLDP_TL( type, length ) htons( ( unsigned short ) ( ( ( type ) << 9 ) \
       | ( ( length ) - LLDP_TLV_HEAD_LEN ) ) )
 #define LLDP_TYPE( type_length ) ( ntohs( type_length ) >> 9 )
-#define LLDP_LEN( type_length ) ( ntohs( type_length ) & 0x1f )
+#define LLDP_LEN( type_length ) ( ntohs( type_length ) & 0x1ff )
 
 enum lldp_type {
   LLDP_TYPE_END,
