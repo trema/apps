@@ -196,7 +196,6 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   buffer *lldp_buf;
   size_t lldp_buf_len = 0;
   ether_header_t *ether;
-  ipv4_header_t *ip = NULL;
 
   struct tlv *chassis_id_tlv;
   uint32_t chassis_id_tlv_len = 0;
@@ -210,6 +209,7 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   char dpid_str[ LLDP_TLV_INFO_MAX_LEN ];
   char port_no_str[ LLDP_TLV_INFO_MAX_LEN ];
   uint16_t *ttl_val;
+  size_t padding_length = 0;
 
   debug( "Creating LLDP Frame." );
 
@@ -231,6 +231,10 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   if ( lldp_over_ip ) {
     lldp_buf_len += sizeof( ipv4_header_t ) + sizeof( etherip_header ) + sizeof( ether_header_t );
   }
+  if ( lldp_buf_len + ETH_FCS_LENGTH < ETH_MINIMUM_LENGTH ) {
+    padding_length = ETH_MINIMUM_LENGTH - ( lldp_buf_len + ETH_FCS_LENGTH );
+    lldp_buf_len += padding_length;
+  }
 
   lldp_buf = alloc_buffer_with_length( lldp_buf_len );
 
@@ -251,7 +255,7 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   ether->type = htons( lldp_ethtype );
 
   if ( lldp_over_ip ) {
-    ip = append_back_buffer( lldp_buf, sizeof( ipv4_header_t ) );
+    ipv4_header_t *ip = append_back_buffer( lldp_buf, sizeof( ipv4_header_t ) );
     memset( ip, 0, sizeof( ipv4_header_t ) );
     ip->ihl = 5;
     ip->version = 4;
@@ -260,6 +264,7 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
     ip->tot_len = htons( ( uint16_t ) ( lldp_buf_len - sizeof( ether_header_t ) ) );
     ip->saddr = htonl( lldp_ip_src );
     ip->daddr = htonl( lldp_ip_dst );
+    ip->check = get_checksum( ( uint16_t * ) ip, sizeof( ipv4_header_t ) );
     etherip_header *etherip = append_back_buffer( lldp_buf, sizeof( etherip_header ) );
     etherip->version = htons( ETHERIP_VERSION );
     ether_header_t *eth = ( ether_header_t * ) ( char * ) append_back_buffer( lldp_buf, sizeof( ether_header_t ) );
@@ -268,7 +273,7 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
     eth->type = htons( ETH_ETHTYPE_LLDP );
   }
 
-  // Create Chassis ID TLV 
+  // Create Chassis ID TLV
   chassis_id_tlv = append_back_buffer( lldp_buf, chassis_id_tlv_len );
   chassis_id_tlv->type_len = LLDP_TL( LLDP_TYPE_CHASSIS_ID, chassis_id_tlv_len );
   info = chassis_id_tlv->val;
@@ -294,10 +299,8 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   end_tlv = append_back_buffer( lldp_buf, LLDP_END_PDU_LEN );
   end_tlv->type_len = LLDP_TL( LLDP_TYPE_END, LLDP_TLV_HEAD_LEN );
 
-  uint16_t padding_length = fill_ether_padding( lldp_buf );
-  if ( lldp_over_ip ) {
-    ip->tot_len = htons( ( uint16_t ) ( ntohs( ip->tot_len ) + padding_length ) );
-    ip->check = ( uint16_t ) get_checksum( ( uint16_t * ) ip, sizeof( ipv4_header_t ) );
+  if ( padding_length > 0 ) {
+    fill_ether_padding( lldp_buf );
   }
 
   return lldp_buf;
