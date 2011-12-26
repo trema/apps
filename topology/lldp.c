@@ -228,33 +228,23 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   lldp_buf_len = sizeof( ether_header_t ) + chassis_id_tlv_len + port_id_tlv_len
     + LLDP_TTL_LEN;
 
-  if ( lldp_over_ip ) {
-    lldp_buf_len += sizeof( ipv4_header_t ) + sizeof( etherip_header ) + sizeof( ether_header_t );
-  }
   if ( lldp_buf_len + ETH_FCS_LENGTH < ETH_MINIMUM_LENGTH ) {
     padding_length = ETH_MINIMUM_LENGTH - ( lldp_buf_len + ETH_FCS_LENGTH );
     lldp_buf_len += padding_length;
   }
+  if ( lldp_over_ip ) {
+    lldp_ethtype = ETH_ETHTYPE_IPV4;
+    lldp_buf_len += sizeof( ipv4_header_t ) + sizeof( etherip_header ) + sizeof( ether_header_t );
+  }
 
   lldp_buf = alloc_buffer_with_length( lldp_buf_len );
 
-  // Create ether frame header
-  ether = append_back_buffer( lldp_buf, sizeof( ether_header_t ) );
-  if ( !lldp_over_ip ) {
-    memcpy( ether->macda, lldp_mac_dst, ETH_ADDRLEN );
-  }
-  else {
+  if ( lldp_over_ip ) {
+    ether = append_back_buffer( lldp_buf, sizeof( ether_header_t ) );
     memset( ether->macda, 0xff, ETH_ADDRLEN );
-  }
-  memcpy( ether->macsa, mac, ETH_ADDRLEN );
+    memcpy( ether->macsa, mac, ETH_ADDRLEN );
+    ether->type = htons( ETH_ETHTYPE_IPV4 );
 
-  if ( lldp_over_ip ) {
-    lldp_ethtype = ETH_ETHTYPE_IPV4;
-  }
-
-  ether->type = htons( lldp_ethtype );
-
-  if ( lldp_over_ip ) {
     ipv4_header_t *ip = append_back_buffer( lldp_buf, sizeof( ipv4_header_t ) );
     memset( ip, 0, sizeof( ipv4_header_t ) );
     ip->ihl = 5;
@@ -267,11 +257,13 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
     ip->check = get_checksum( ( uint16_t * ) ip, sizeof( ipv4_header_t ) );
     etherip_header *etherip = append_back_buffer( lldp_buf, sizeof( etherip_header ) );
     etherip->version = htons( ETHERIP_VERSION );
-    ether_header_t *eth = ( ether_header_t * ) ( char * ) append_back_buffer( lldp_buf, sizeof( ether_header_t ) );
-    memcpy( eth->macda, lldp_mac_dst, ETH_ADDRLEN );
-    memcpy( eth->macsa, mac, ETH_ADDRLEN );
-    eth->type = htons( ETH_ETHTYPE_LLDP );
   }
+
+  // Create ether frame header
+  ether = append_back_buffer( lldp_buf, sizeof( ether_header_t ) );
+  memcpy( ether->macda, lldp_mac_dst, ETH_ADDRLEN );
+  memcpy( ether->macsa, mac, ETH_ADDRLEN );
+  ether->type = htons( ETH_ETHTYPE_LLDP );
 
   // Create Chassis ID TLV
   chassis_id_tlv = append_back_buffer( lldp_buf, chassis_id_tlv_len );
