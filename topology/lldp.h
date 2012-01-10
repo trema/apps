@@ -27,7 +27,9 @@
 #include "probe_timer_table.h"
 
 
-#define LLDP_TLV_INFO_MAX_LEN 255U
+#define LLDP_TLV_INFO_MAX_LEN 511U
+#define LLDP_TLV_CHASSIS_ID_INFO_MAX_LEN 255U
+#define LLDP_TLV_PORT_ID_INFO_MAX_LEN 255U
 
 #define LLDP_TLV_HEAD_LEN 2U
 #define LLDP_SUBTYPE_LEN 1U

@@ -127,7 +127,10 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
     assert( lldp_tlv );
     type = LLDP_TYPE( *lldp_tlv );
     len = ( uint32_t ) LLDP_LEN( *lldp_tlv );
-    assert( len <= LLDP_TLV_INFO_MAX_LEN );
+    if ( len > LLDP_TLV_INFO_MAX_LEN ) {
+      info( "Missing length of LLDP tlv header ( len = %u ).", len );
+      return -1;
+    }
 
     remain_len -= LLDP_TLV_HEAD_LEN;
     if ( remain_len < len ) {
@@ -139,9 +142,17 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
 
     switch ( type ) {
     case LLDP_TYPE_END:
+      if ( len != 0 ) {
+        info( "Missing length of LLDP END ( len = %u ).", len );
+        return -1;
+      }
       break;
 
     case LLDP_TYPE_CHASSIS_ID:
+      if ( len > ( LLDP_SUBTYPE_LEN + LLDP_TLV_CHASSIS_ID_INFO_MAX_LEN ) ) {
+        info( "Missing length of LLDP CHASSIS ID ( len = %u ).", len );
+        return -1;
+      }
       subtype = *( ( uint8_t * ) lldp_du );
       lldp_du += LLDP_SUBTYPE_LEN;
       switch ( subtype ) {
@@ -159,6 +170,10 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
       break;
 
     case LLDP_TYPE_PORT_ID:
+      if ( len > ( LLDP_SUBTYPE_LEN + LLDP_TLV_PORT_ID_INFO_MAX_LEN ) ) {
+        info( "Missing length of LLDP PORT ID ( len = %u ).", len );
+        return -1;
+      }
       subtype = *( ( uint8_t * ) lldp_du );
       lldp_du += LLDP_SUBTYPE_LEN;
       switch ( subtype ) {
@@ -176,10 +191,22 @@ recv_lldp( uint64_t *dpid, uint16_t *port_no, const buffer *buf ) {
       break;
 
     case LLDP_TYPE_TTL:
+      if ( len != 2 ) {
+        info( "Missing length of LLDP TTL ( len = %u ).", len );
+        return -1;
+      }
+      break;
+
+    case LLDP_TYPE_PORT_DESC:
+    case LLDP_TYPE_SYS_NAME:
+    case LLDP_TYPE_SYS_DESC:
+    case LLDP_TYPE_SYS_CAPABILITES:
+    case LLDP_TYPE_MNG_ADDR:
+    case LLDP_TYPE_ORGANIZE_SPEC:
       break;
 
     default:
-      debug( "Unknown LLDP type (%#x).", type );
+      info( "Unknown LLDP type (%#x).", type );
       return -1;
     }
 
@@ -206,23 +233,23 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
   struct tlv *ttl_tlv;
   struct tlv *end_tlv;
   char *info;
-  char dpid_str[ LLDP_TLV_INFO_MAX_LEN ];
-  char port_no_str[ LLDP_TLV_INFO_MAX_LEN ];
+  char dpid_str[ LLDP_TLV_CHASSIS_ID_INFO_MAX_LEN ];
+  char port_no_str[ LLDP_TLV_PORT_ID_INFO_MAX_LEN ];
   uint16_t *ttl_val;
   size_t padding_length = 0;
 
   debug( "Creating LLDP Frame." );
 
   // Convert Chassis ID into string
-  chassis_id_strlen = ( uint32_t ) snprintf( dpid_str, ( LLDP_TLV_INFO_MAX_LEN - 1 ), "%#" PRIx64, dpid );
+  chassis_id_strlen = ( uint32_t ) snprintf( dpid_str, ( LLDP_TLV_CHASSIS_ID_INFO_MAX_LEN - 1 ), "%#" PRIx64, dpid );
 
-  assert ( chassis_id_strlen <= ( LLDP_TLV_INFO_MAX_LEN - 1 ) );
+  assert ( chassis_id_strlen <= ( LLDP_TLV_CHASSIS_ID_INFO_MAX_LEN - 1 ) );
 
   chassis_id_tlv_len = LLDP_TLV_HEAD_LEN + LLDP_SUBTYPE_LEN + chassis_id_strlen;
 
   // Convert Port ID into string
-  port_id_strlen = ( uint32_t ) snprintf( port_no_str, ( LLDP_TLV_INFO_MAX_LEN - 1 ), "%d", port_no );
-  assert ( port_id_strlen <= ( LLDP_TLV_INFO_MAX_LEN - 1 ) );
+  port_id_strlen = ( uint32_t ) snprintf( port_no_str, ( LLDP_TLV_PORT_ID_INFO_MAX_LEN - 1 ), "%d", port_no );
+  assert ( port_id_strlen <= ( LLDP_TLV_PORT_ID_INFO_MAX_LEN - 1 ) );
   port_id_tlv_len = LLDP_TLV_HEAD_LEN + LLDP_SUBTYPE_LEN + port_id_strlen;
 
   lldp_buf_len = sizeof( ether_header_t ) + chassis_id_tlv_len + port_id_tlv_len
@@ -303,7 +330,7 @@ static int
 parse_lldp_ull( void *str, uint64_t *value, uint32_t len ) {
   unsigned int i;
   char *end_p;
-  char buf[ LLDP_TLV_INFO_MAX_LEN ];
+  char buf[ LLDP_TLV_CHASSIS_ID_INFO_MAX_LEN + 1];
   char *p = ( char * ) str;
 
   for ( i = 0; i < len; i++ ) {
@@ -314,7 +341,8 @@ parse_lldp_ull( void *str, uint64_t *value, uint32_t len ) {
 
   *value = strtoull( buf, &end_p, 0 );
   if ( *end_p != '\0' ) {
-    error( "Failed to strtoull." );
+    // uknown format of topology_discovery cassis id
+    debug( "Failed to strtoull." );
     return -1;
   }
 
@@ -326,7 +354,7 @@ static int
 parse_lldp_us( void *str, uint16_t *value, uint32_t len ) {
   unsigned int i;
   char *end_p;
-  char buf[ LLDP_TLV_INFO_MAX_LEN ];
+  char buf[ LLDP_TLV_PORT_ID_INFO_MAX_LEN + 1 ];
   char *p = ( char * ) str;
 
   for ( i = 0; i < len; i++ ) {
@@ -337,7 +365,8 @@ parse_lldp_us( void *str, uint16_t *value, uint32_t len ) {
 
   *value = ( uint16_t ) strtoul( buf, &end_p, 0 );
   if ( *end_p != '\0' ) {
-    error( "Failed to strtoull." );
+    // uknown format of topology_discovery port id
+    debug( "Failed to strtoul." );
     return -1;
   }
 
