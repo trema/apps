@@ -421,7 +421,7 @@ finalize_libtopology() {
   delete_message_replied_callback( libtopology_queue_name, recv_reply );
   xfree( libtopology_queue_name );
   libtopology_queue_name = NULL;
-  delete_periodic_event_callback( check_transaction_table );
+  delete_timer_event( check_transaction_table, NULL );
   delete_hash( transaction_table );
   transaction_table = NULL;
 
