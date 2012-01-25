@@ -446,7 +446,7 @@ finalize_redirector() {
   host_entry *host_entry;
 
   if ( host_db != NULL ) {
-    delete_periodic_event_callback( age_host_db );
+    delete_timer_event( age_host_db, NULL );
     init_hash_iterator( host_db, &iter );
     while ( ( entry = iterate_hash_next( &iter ) ) != NULL ) {
       host_entry = entry->value;
