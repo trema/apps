@@ -32,8 +32,8 @@ Feature: control multiple openflow switchies using sliceable_routing_switch
       link "sliceable_routing_switch1", "host3"
       link "sliceable_routing_switch1", "host4"
 
-      app { path "../apps/topology/topology" }
-      app { path "../apps/topology/topology_discovery" }
+      run { path "../apps/topology/topology" }
+      run { path "../apps/topology/topology_discovery" }
 
       event :port_status => "topology", :packet_in => "filter", :state_notify => "topology"
       filter :lldp => "topology_discovery", :packet_in => "sliceable_routing_switch"
@@ -143,8 +143,8 @@ Feature: control multiple openflow switchies using sliceable_routing_switch
       link "sliceable_routing_switch2", "host4"
       link "sliceable_routing_switch1", "sliceable_routing_switch2"
 
-      app { path "../apps/topology/topology" }
-      app { path "../apps/topology/topology_discovery" }
+      run { path "../apps/topology/topology" }
+      run { path "../apps/topology/topology_discovery" }
 
       event :port_status => "topology", :packet_in => "filter", :state_notify => "topology"
       filter :lldp => "topology_discovery", :packet_in => "sliceable_routing_switch"

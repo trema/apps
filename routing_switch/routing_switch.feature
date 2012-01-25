@@ -16,8 +16,8 @@ Feature: control multiple openflow switchies using routing_switch
       link "routing_switch", "host1"
       link "routing_switch", "host2"
 
-      app { path "../apps/topology/topology" }
-      app { path "../apps/topology/topology_discovery" }
+      run { path "../apps/topology/topology" }
+      run { path "../apps/topology/topology_discovery" }
 
       event :port_status => "topology", :packet_in => "filter", :state_notify => "topology"
       filter :lldp => "topology_discovery", :packet_in => "routing_switch"
@@ -58,8 +58,8 @@ Feature: control multiple openflow switchies using routing_switch
       link "routing_switch2", "routing_switch4"
       link "routing_switch3", "routing_switch4"
 
-      app { path "../apps/topology/topology" }
-      app { path "../apps/topology/topology_discovery" }
+      run { path "../apps/topology/topology" }
+      run { path "../apps/topology/topology_discovery" }
 
       event :port_status => "topology", :packet_in => "filter", :state_notify => "topology"
       filter :lldp => "topology_discovery", :packet_in => "routing_switch"
@@ -91,8 +91,8 @@ Feature: control multiple openflow switchies using routing_switch
       link "routing_switch3", "routing_switch4"
       link "routing_switch3", "routing_switch5"
 
-      app { path "../apps/topology/topology" }
-      app { path "../apps/topology/topology_discovery" }
+      run { path "../apps/topology/topology" }
+      run { path "../apps/topology/topology_discovery" }
 
       event :port_status => "topology", :packet_in => "filter", :state_notify => "topology"
       filter :lldp => "topology_discovery", :packet_in => "routing_switch"
@@ -122,8 +122,8 @@ Feature: control multiple openflow switchies using routing_switch
       link "routing_switch1", "routing_switch2"
       link "routing_switch2", "routing_switch3"
 
-      app { path "../apps/topology/topology" }
-      app {
+      run { path "../apps/topology/topology" }
+      run {
         path "../apps/topology/topology_discovery"
         options "--lldp_mac_dst=01:00:00:00:00:ff"
       }
@@ -156,11 +156,11 @@ Feature: control multiple openflow switchies using routing_switch
       link "routing_switch1", "routing_switch2"
       link "routing_switch2", "routing_switch3"
 
-      app {
+      run {
         path "../apps/topology/topology"
         options "--lldp_over_ip", "--lldp_ip_src=10.0.0.1", "--lldp_ip_dst=10.0.0.2"
       }
-      app {
+      run {
         path "../apps/topology/topology_discovery"
         options "--lldp_over_ip", "--lldp_ip_src=10.0.0.1", "--lldp_ip_dst=10.0.0.2"
       }

@@ -20,7 +20,7 @@ Feature: topology help
       link "routing_switch2", "routing_switch4"
       link "routing_switch3", "routing_switch4"
 
-      app { path "../apps/topology/topology" }
+      run { path "../apps/topology/topology" }
 
       event :port_status => "topology", :packet_in => "filter", :state_notify => "topology"
       filter :lldp => "topology_discovery", :packet_in => "routing_switch"
