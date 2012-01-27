@@ -1,0 +1,5 @@
+*.o
+*.swp
+*~
+.depends
+show_description
