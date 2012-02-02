@@ -680,7 +680,7 @@ sub handle_put_requests(){
 
 
 sub modify_network(){
-    my $slice_id = (@_);
+    my ($slice_id) = (@_);
     my $content_string = get_request_body();
     my $content = from_json($content_string);
     my $description = ${$content}{'description'};
@@ -826,6 +826,8 @@ sub get_request_body(){
 	# FIXME: param('POSTDATA') replaces LF characters to '+'. why?
 	$body = $CGI->param('POSTDATA');
     }
+    elsif($CGI->request_method() eq "POST"){
+	$body = $CGI->param('PUTDATA');
     else{
 	if(defined($length) && $length > 0){
 	    read(STDIN, $body, $length);

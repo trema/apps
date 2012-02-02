@@ -33,6 +33,7 @@ run(){
 tests(){
     run GET ""
     run POST "" create_network.json
+    run PUT "/slice_created_via_rest_if" modify_network.json
     run POST "/slice_created_via_rest_if/ports" create_port.json
     run GET "/slice_created_via_rest_if/ports"
     run POST "/slice_created_via_rest_if/ports/port_created_via_rest_if/attachments" create_port_mac.json
