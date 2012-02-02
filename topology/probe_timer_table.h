@@ -28,7 +28,6 @@
 
 typedef struct probe_timer_entry {
   struct timespec expires;
-  struct timespec send_lldp_time;
   uint64_t datapath_id;
   uint16_t port_no;
   uint8_t mac[ ETH_ADDRLEN ];
@@ -37,6 +36,7 @@ typedef struct probe_timer_entry {
   bool link_up;
   uint64_t to_datapath_id;
   uint16_t to_port_no;
+  bool dirty;
 } probe_timer_entry;
 
 

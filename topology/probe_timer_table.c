@@ -31,9 +31,6 @@ dlist_element *probe_timer_table;
 dlist_element *probe_timer_last;
 
 
-struct timespec port_up_time;
-
-
 static inline void
 get_current_time( struct timespec *now ) {
   clock_gettime( CLOCK_MONOTONIC, now );
@@ -79,14 +76,27 @@ timespec_le( const struct timespec *a, const struct timespec *b ) {
 }
 
 
-static inline bool
-other_port_status_changed( probe_timer_entry *entry ) {
-  if ( entry->link_up ) {
-    probe_timer_entry *peer = lookup_probe_timer_entry( &entry->to_datapath_id,
-                                                        entry->to_port_no );
-    return peer == NULL;
+static inline void
+peer_port_status_update( probe_timer_entry *entry ) {
+  probe_timer_entry *peer = lookup_probe_timer_entry( &entry->to_datapath_id, entry->to_port_no );
+  if ( peer == NULL ) {
+    return;
   }
-  return !timespec_le( &port_up_time, &( entry->send_lldp_time ) );
+  if ( peer->link_up ) {
+    peer->dirty = true;
+  }
+}
+
+
+static inline void
+peer_link_status_update( probe_timer_entry *entry ) {
+  probe_timer_entry *peer = lookup_probe_timer_entry( &entry->to_datapath_id, entry->to_port_no );
+  if ( peer == NULL ) {
+    return;
+  }
+  if ( entry->link_up != peer->link_up ) {
+    peer->dirty = true;
+  }
 }
 
 
@@ -141,15 +151,15 @@ static void
 set_confirmed_state( probe_timer_entry *entry ) {
   if ( entry->state != PROBE_TIMER_STATE_CONFIRMED ) {
     entry->state = PROBE_TIMER_STATE_CONFIRMED;
-    entry->retry_count = 2;
+    entry->retry_count = 12;
   }
-  set_expires( 30000, entry );
+  set_expires( 5000, entry );
 }
 
 
 static void
 reset_confirmed_state( probe_timer_entry *entry ) {
-  entry->retry_count = 12;
+  entry->retry_count = 24;
 }
 
 
@@ -161,7 +171,6 @@ probe_request( probe_timer_entry *entry, int event, uint64_t *dpid, uint16_t por
       switch( event ) {
         case PROBE_TIMER_EVENT_UP:
           set_send_delay_state( entry );
-          get_current_time( &port_up_time );
           break;
         default:
           break;
@@ -179,7 +188,7 @@ probe_request( probe_timer_entry *entry, int event, uint64_t *dpid, uint16_t por
             reset_wait_state( entry );
           }
           else {
-            get_current_time( &( entry->send_lldp_time ) );
+	    entry->dirty = false;
           }
           break;
         default:
@@ -216,11 +225,10 @@ probe_request( probe_timer_entry *entry, int event, uint64_t *dpid, uint16_t por
               reset_wait_state( entry );
             }
             else {
-              get_current_time( &( entry->send_lldp_time ) );
+	      entry->dirty = false;
             }
           } else {
             set_confirmed_state( entry );
-            get_current_time( &( entry->send_lldp_time ) );
 
             topology_update_link_status link_status;
             link_status.from_dpid = entry->datapath_id;
@@ -253,7 +261,7 @@ probe_request( probe_timer_entry *entry, int event, uint64_t *dpid, uint16_t por
           break;
         case PROBE_TIMER_EVENT_TIMEOUT:
           if ( --entry->retry_count > 0
-            && !other_port_status_changed( entry ) ) {
+            && !entry->dirty ) {
             set_confirmed_state( entry );
           } else {
             set_send_delay_state( entry );
@@ -263,6 +271,7 @@ probe_request( probe_timer_entry *entry, int event, uint64_t *dpid, uint16_t por
           if ( !entry->link_up ) {
             // unstable link
             set_confirmed_state( entry );
+	    entry->dirty = true;
 
             topology_update_link_status link_status;
             link_status.from_dpid = entry->datapath_id;
@@ -384,6 +393,7 @@ allocate_probe_timer_entry( const uint64_t *datapath_id, uint16_t port_no,
   new_entry->link_up = false;
   new_entry->to_datapath_id = 0;
   new_entry->to_port_no = 0;
+  new_entry->dirty = false;
 
   return new_entry;
 }
