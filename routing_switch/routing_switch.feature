@@ -183,7 +183,8 @@ Feature: control multiple openflow switchies using routing_switch
       Switching HUB.
       Usage: routing_switch [OPTION]...
 
-        -i, --idle_timeout=TIMEOUT  Idle timeout value of flow entry
+        -i, --idle_timeout=TIMEOUT       Idle timeout value of flow entry
+        -A, --handle_arp_with_packetout  Handle ARP with packetout
         -n, --name=SERVICE_NAME     service name
         -t, --topology=SERVICE_NAME topology service name
         -d, --daemonize             run in the background
@@ -199,7 +200,8 @@ Feature: control multiple openflow switchies using routing_switch
       Switching HUB.
       Usage: routing_switch [OPTION]...
 
-        -i, --idle_timeout=TIMEOUT  Idle timeout value of flow entry
+        -i, --idle_timeout=TIMEOUT       Idle timeout value of flow entry
+        -A, --handle_arp_with_packetout  Handle ARP with packetout
         -n, --name=SERVICE_NAME     service name
         -t, --topology=SERVICE_NAME topology service name
         -d, --daemonize             run in the background

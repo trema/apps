@@ -44,11 +44,13 @@ static const uint16_t PACKET_IN_DISCARD_DURATION = 1;
 
 typedef struct routing_switch_options {
   uint16_t idle_timeout;
+  bool handle_arp_with_packetout;
 } routing_switch_options;
 
 
 typedef struct routing_switch {
   uint16_t idle_timeout;
+  bool handle_arp_with_packetout;
   list_element *switches;
   hash_table *fdb;
   pathresolver *pathresolver;
@@ -172,14 +174,19 @@ make_path( routing_switch *routing_switch, uint64_t in_datapath_id, uint16_t in_
     return;
   }
 
-  // count elements
-  uint32_t hop_count = count_hops( hops );
+  // check if the packet is ARP or not
+  if ( !routing_switch->handle_arp_with_packetout || !packet_type_arp( packet ) ) {
+    // send flowmod when handle ARP WITHOUT packetout or packet is NOT ARP
 
-  // send flow entry from tail switch
-  for ( dlist_element *e = get_last_element( hops ); e != NULL; e = e->prev, hop_count-- ) {
-    uint16_t idle_timer = ( uint16_t ) ( routing_switch->idle_timeout + hop_count );
-    modify_flow_entry( e->data, packet, idle_timer );
-  } // for(;;)
+    // count elements
+    uint32_t hop_count = count_hops( hops );
+
+    // send flow entry from tail switch
+    for ( dlist_element *e = get_last_element( hops ); e != NULL; e = e->prev, hop_count-- ) {
+      uint16_t idle_timer = ( uint16_t ) ( routing_switch->idle_timeout + hop_count );
+      modify_flow_entry( e->data, packet, idle_timer );
+    } // for(;;)
+  }
 
   // send packet out for tail switch
   dlist_element *e = get_last_element( hops );
@@ -485,10 +492,14 @@ create_routing_switch( const char *topology_service, const routing_switch_option
   // Allocate routing_switch object
   routing_switch *routing_switch = xmalloc( sizeof( struct routing_switch ) );
   routing_switch->idle_timeout = options->idle_timeout;
+  routing_switch->handle_arp_with_packetout = options->handle_arp_with_packetout;
   routing_switch->switches = NULL;
   routing_switch->fdb = NULL;
 
   info( "idle_timeout is set to %u [sec].", routing_switch->idle_timeout );
+  if ( routing_switch->handle_arp_with_packetout ) {
+    info( "Handle ARP with packetout" );
+  }
 
   // Create pathresolver table
   routing_switch->pathresolver = create_pathresolver();
@@ -531,10 +542,14 @@ delete_routing_switch( routing_switch *routing_switch ) {
 }
 
 
-static char option_description[] = "  -i, --idle_timeout=TIMEOUT  Idle timeout value of flow entry\n";
-static char short_options[] = "i:";
+static char option_description[] =
+  "  -i, --idle_timeout=TIMEOUT       Idle timeout value of flow entry\n"
+  "  -A, --handle_arp_with_packetout  Handle ARP with packetout\n";
+
+static char short_options[] = "i:A";
 static struct option long_options[] = {
   { "idle_timeout", 1, NULL, 'i' },
+  { "handle_arp_with_packetout", 0, NULL, 'A' },
   { NULL, 0, NULL, 0  },
 };
 
@@ -557,6 +572,7 @@ init_routing_switch_options( routing_switch_options *options, int *argc, char **
 
   // set default values
   options->idle_timeout = FLOW_TIMER;
+  options->handle_arp_with_packetout = false;
 
   int argc_tmp = *argc;
   char *new_argv[ *argc ];
@@ -579,6 +595,10 @@ init_routing_switch_options( routing_switch_options *options, int *argc, char **
           return;
         }
         options->idle_timeout = ( uint16_t ) idle_timeout;
+        break;
+
+      case 'A':
+        options->handle_arp_with_packetout = true;
         break;
 
       default:
