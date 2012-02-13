@@ -828,6 +828,7 @@ sub get_request_body(){
     }
     elsif($CGI->request_method() eq "POST"){
 	$body = $CGI->param('PUTDATA');
+    }
     else{
 	if(defined($length) && $length > 0){
 	    read(STDIN, $body, $length);
