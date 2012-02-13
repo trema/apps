@@ -213,7 +213,10 @@ probe_request( probe_timer_entry *entry, int event, uint64_t *dpid, uint16_t por
           entry->to_port_no = port_no;
           entry->link_up = true;
           bool ret = set_link_status( &link_status, NULL, NULL );
-          if ( !ret ) {
+          if ( ret ) {
+	    peer_link_status_update( entry );
+	  }
+	  else {
             reset_confirmed_state( entry );
           }
           break;
@@ -245,7 +248,10 @@ probe_request( probe_timer_entry *entry, int event, uint64_t *dpid, uint16_t por
             entry->to_port_no = 0;
             entry->link_up = false;
             bool ret = set_link_status( &link_status, NULL, NULL );
-            if ( !ret ) {
+            if ( ret ) {
+	      peer_link_status_update( entry );
+	    }
+	    else {
               reset_confirmed_state( entry );
             }
           }
@@ -297,7 +303,10 @@ probe_request( probe_timer_entry *entry, int event, uint64_t *dpid, uint16_t por
            entry->datapath_id, entry->port_no );
   }
 
-  if ( entry->state != PROBE_TIMER_STATE_INACTIVE ) {
+  if ( entry->state == PROBE_TIMER_STATE_INACTIVE ) {
+    peer_port_status_update( entry );
+  }
+  else {
     insert_probe_timer_entry( entry );
   }
 }
