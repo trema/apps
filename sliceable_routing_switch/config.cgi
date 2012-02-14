@@ -826,7 +826,7 @@ sub get_request_body(){
 	# FIXME: param('POSTDATA') replaces LF characters to '+'. why?
 	$body = $CGI->param('POSTDATA');
     }
-    elsif($CGI->request_method() eq "POST"){
+    elsif($CGI->request_method() eq "PUT"){
 	$body = $CGI->param('PUTDATA');
     }
     else{
