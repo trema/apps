@@ -579,12 +579,14 @@ sub set_default_filter_criteria(){
 	if($build_ofp_wildcards){
 	    $criteria[1] |= OFPFW_NW_SRC_MASK;
 	}
-    } elsif($criteria[10] =~ s,/(\d+),,) {
+    }
+    elsif($criteria[10] =~ s/\/(\d+)//){
 	if($build_ofp_wildcards){
 	    my $bit_count = 32 - $1;
-	    if ($bit_count > 0) {
+	    if($bit_count >= 0){
 		$criteria[1] |= $bit_count << OFPFW_NW_SRC_SHIFT;
-	    } else {
+	    }
+	    else{
 		$criteria[1] |= OFPFW_NW_SRC_MASK;
 	    }
 	}
@@ -594,12 +596,14 @@ sub set_default_filter_criteria(){
 	if($build_ofp_wildcards){
 	    $criteria[1] |= OFPFW_NW_DST_MASK;
 	}
-    } elsif($criteria[11] =~ s,/(\d+),,) {
+    }
+    elsif($criteria[11] =~ s/\/(\d+)//) {
 	if($build_ofp_wildcards){
 	    my $bit_count = 32 - $1;
-	    if ($bit_count > 0) {
+	    if($bit_count >= 0){
 		$criteria[1] |= $bit_count << OFPFW_NW_DST_SHIFT;
-	    } else {
+	    }
+	    else{
 		$criteria[1] |= OFPFW_NW_DST_MASK;
 	    }
 	}
@@ -762,16 +766,18 @@ sub string_to_ofp_wildcards(){
 	    $wc |= OFPFW_NW_PROTO;
 	}
 	if($p =~ /^nw_src:(\d+)$/i){
-	    if ($1 < 32) {
+	    if($1 < 32){
 		$wc |= $1 << OFPFW_NW_SRC_SHIFT;
-	    } else {
+	    }
+	    else{
 		$wc |= OFPFW_NW_SRC_MASK;
 	    }
 	}
 	if($p =~ /^nw_dst:(\d+)$/i){
-	    if ($1 < 32) {
+	    if($1 < 32){
 		$wc |= $1 << OFPFW_NW_DST_SHIFT;
-	    } else {
+	    }
+	    else{
 		$wc |= OFPFW_NW_DST_MASK;
 	    }
 	}
