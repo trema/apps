@@ -603,7 +603,7 @@ sub add_filters(){
 	$criteria[12] = ${$filter}{'tp_src'};
 	$criteria[13] = ${$filter}{'tp_dst'};
 	$criteria[14] = ${$filter}{'wildcards'};
-	$criteria[15] = ${$filter}{'in_datapath_id'};
+	$criteria[15] = oct(${$filter}{'in_datapath_id'});
 	$criteria[16] = ${$filter}{'slice'};
 	$criteria[17] = ${$filter}{'action'};
 	my $id = ${$filter}{'id'};
