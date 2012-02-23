@@ -285,6 +285,9 @@ sub show_port(){
     %bindings = $Slice->get_bindings(Slice::BINDING_TYPE_PORT_MAC, $slice_id);
 
     foreach my $id (keys(%bindings)){
+	if($bindings{$id}{'port'} != $output{'config'}{'port'}){
+	    next;
+	}
 	my %binding = ();
 	$binding{'id'} = sprintf("%s", $id);
 	$binding{'mac'} = sprintf("%s", $bindings{$id}{'mac'});
