@@ -39,6 +39,16 @@
 #include "sliceable_routing_switch.h"
 #include "topology_service_interface_option_parser.h"
 
+/*
+#define SET_IPV4_REVERSE_PATH
+This is an experimental option to setup going and returning flows for IPv4 packet.
+This could be reduce a number of packet_in and resolve_path, and is useful for
+accepting packets that are responce to a request packet from dynamic client tdp/udp
+ports like 30001.  For ICMPv4 protocols, just "Echo Reply" is modified as the
+returning flow.
+WARN: The returning flow is modified without filter check.
+      This might be harmful to user's security policy.
+*/
 
 static const uint16_t FLOW_TIMER = 60;
 static const uint16_t PACKET_IN_DISCARD_DURATION = 1;
@@ -102,6 +112,109 @@ modify_flow_entry( const pathresolver_hop *h, const buffer *packet, uint16_t idl
   delete_actions( actions );
   free_buffer( flow_mod );
 }
+
+
+#ifdef SET_IPV4_REVERSE_PATH
+
+static void
+set_reverse_hop( pathresolver_hop *r_hop, const pathresolver_hop *hop ) {
+  r_hop->dpid = hop->dpid;
+  r_hop->in_port_no = hop->out_port_no;
+  r_hop->out_port_no = hop->in_port_no;
+}
+
+static void
+set_ipv4_reverse_match( struct ofp_match *r_match, const uint16_t r_in_port, const uint16_t r_in_vid, const struct ofp_match *match ) {
+
+  memcpy( r_match, match, sizeof( struct ofp_match ) );
+
+  // set wildcards
+  uint32_t clean_field = OFPFW_DL_SRC + OFPFW_DL_DST + OFPFW_TP_SRC + OFPFW_TP_DST + OFPFW_NW_SRC_MASK + OFPFW_NW_DST_MASK;
+  r_match->wildcards &= ( OFPFW_ALL - clean_field );
+  if ( match->wildcards & OFPFW_DL_DST ) {
+    r_match->wildcards |= OFPFW_DL_SRC;
+  }
+  if ( match->wildcards & OFPFW_DL_SRC ) {
+    r_match->wildcards |= OFPFW_DL_DST;
+  }
+  if ( match->wildcards & OFPFW_TP_DST ) {
+    r_match->wildcards |= OFPFW_TP_SRC;
+  }
+  if ( match->wildcards & OFPFW_TP_SRC ) {
+    r_match->wildcards |= OFPFW_TP_DST;
+  }
+  r_match->wildcards |= ( match->wildcards & OFPFW_NW_DST_MASK ) >> OFPFW_NW_DST_SHIFT << OFPFW_NW_SRC_SHIFT;
+  r_match->wildcards |= ( match->wildcards & OFPFW_NW_SRC_MASK ) >> OFPFW_NW_SRC_SHIFT << OFPFW_NW_DST_SHIFT;
+
+  r_match->in_port = r_in_port;
+  memcpy( r_match->dl_src, match->dl_dst, OFP_ETH_ALEN );
+  memcpy( r_match->dl_dst, match->dl_src, OFP_ETH_ALEN );
+  r_match->dl_vlan = r_in_vid;
+  r_match->nw_src = match->nw_dst;
+  r_match->nw_dst = match->nw_src;
+  switch ( match->nw_proto ) {
+  case IPPROTO_ICMP:
+    r_match->icmp_type = 0;
+    r_match->icmp_code = 0;
+    r_match->wildcards &= ( OFPFW_ALL - ( OFPFW_ICMP_TYPE + OFPFW_ICMP_CODE ) );
+    break;
+  case IPPROTO_TCP:
+    r_match->tp_src = match->tp_dst;
+    r_match->tp_dst = match->tp_src;
+    break;
+  case IPPROTO_UDP:
+    r_match->tp_src = match->tp_dst;
+    r_match->tp_dst = match->tp_src;
+    break;
+  default:
+    break;
+  }
+}
+
+
+static void
+modify_reverse_flow_entry( const pathresolver_hop *h, const buffer *packet, uint16_t idle_timeout, uint16_t r_in_vid ) {
+  pathresolver_hop r_hop;
+  set_reverse_hop( &r_hop, h);
+
+  const uint32_t wildcards = 0;
+  struct ofp_match match;
+  set_match_from_packet( &match, h->in_port_no, wildcards, packet );
+  uint16_t r_out_vid = match.dl_vlan;
+
+  struct ofp_match r_match;
+  set_ipv4_reverse_match( &r_match, r_hop.in_port_no, r_in_vid, &match );
+
+  uint32_t transaction_id = get_transaction_id();
+  openflow_actions *actions = create_actions();
+
+  if ( r_in_vid != r_out_vid ) {
+    if ( r_in_vid != VLAN_NONE && r_out_vid == VLAN_NONE ) {
+      append_action_strip_vlan( actions );
+    }
+    else {
+      append_action_set_vlan_vid( actions, r_out_vid );
+    }
+  }
+
+  const uint16_t max_len = UINT16_MAX;
+  append_action_output( actions, r_hop.out_port_no, max_len );
+
+  const uint16_t hard_timeout = 0;
+  const uint16_t priority = UINT16_MAX;
+  const uint32_t buffer_id = UINT32_MAX;
+  const uint16_t flags = 0;
+  buffer *flow_mod = create_flow_mod( transaction_id, r_match, get_cookie(),
+                                      OFPFC_ADD, idle_timeout, hard_timeout,
+                                      priority, buffer_id, 
+                                      r_hop.out_port_no, flags, actions );
+
+  send_openflow_message( r_hop.dpid, flow_mod );
+  delete_actions( actions );
+  free_buffer( flow_mod );
+}
+
+#endif // SET_IPV4_REVERSE_PATH
 
 
 static void
@@ -221,6 +334,25 @@ make_path( routing_switch *routing_switch, uint64_t in_datapath_id, uint16_t in_
       modify_flow_entry( e->data, packet, idle_timer, out_vid );
     }
   } // for(;;)
+
+#ifdef SET_IPV4_REVERSE_PATH
+
+  if ( packet_type_ipv4( packet ) ) {
+    uint32_t hop_count = count_hops( hops );
+
+    // send flow entry from tail switch
+    for ( dlist_element *e = get_first_element( hops ); e != NULL; e = e->next, hop_count-- ) {
+      uint16_t idle_timer = ( uint16_t ) ( routing_switch->idle_timeout + hop_count );
+      if ( e->prev != NULL ) {
+        modify_reverse_flow_entry( e->data, packet, idle_timer, in_vid );
+      }
+      else {
+        modify_reverse_flow_entry( e->data, packet, idle_timer, out_vid );
+      }
+    } // for(;;)
+  }
+
+#endif // SET_IPV4_REVERSE_PATH
 
   // send packet out for tail switch
   dlist_element *e = get_last_element( hops );
