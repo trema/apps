@@ -281,7 +281,7 @@ create_lldp_frame( const uint8_t *mac, uint64_t dpid, uint16_t port_no ) {
     ip->tot_len = htons( ( uint16_t ) ( lldp_buf_len - sizeof( ether_header_t ) ) );
     ip->saddr = htonl( lldp_ip_src );
     ip->daddr = htonl( lldp_ip_dst );
-    ip->check = get_checksum( ( uint16_t * ) ip, sizeof( ipv4_header_t ) );
+    ip->csum = get_checksum( ( uint16_t * ) ip, sizeof( ipv4_header_t ) );
     etherip_header *etherip = append_back_buffer( lldp_buf, sizeof( etherip_header ) );
     etherip->version = htons( ETHERIP_VERSION );
   }
