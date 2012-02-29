@@ -39,6 +39,7 @@ typedef struct {
 
 #define WILDCARD_IN_DATAPATH_ID 0x00000001
 #define WILDCARD_SLICE_NUMBER   0x00000002
+#define WILDCARD_ALL ( WILDCARD_IN_DATAPATH_ID | WILDCARD_SLICE_NUMBER )
 
 
 typedef struct {
@@ -63,11 +64,11 @@ static char filter_db_file[ PATH_MAX ];
 
 static bool
 compare_filter_entry( const void *x, const void *y ) {
-  bool ret = compare_match( ( const struct ofp_match * ) x,
-                            ( const struct ofp_match * ) y );
-
   const filter_match *match_x = x;
   const filter_match *match_y = y;
+
+  bool ret = compare_match( &match_x->ofp_match, &match_y->ofp_match );
+
   uint32_t wildcards = match_x->wildcards | match_y->wildcards;
 
   ret = ( ( wildcards & WILDCARD_IN_DATAPATH_ID || match_x->in_datapath_id == match_y->in_datapath_id ) &&
@@ -179,13 +180,22 @@ lookup_filter( filter_match match ) {
 
 static bool
 compare_filter_entry_strict( const filter_match *x, const filter_match *y ) {
-  bool ret = compare_match_strict( ( const struct ofp_match * ) x,
-                                   ( const struct ofp_match * ) y );
+  const filter_match *match_x = x;
+  const filter_match *match_y = y;
 
-  uint32_t wildcards_x = x->wildcards & OFPFW_ALL;
-  uint32_t wildcards_y = y->wildcards & OFPFW_ALL;
+  uint32_t wildcards_x = match_x->wildcards & WILDCARD_ALL;
+  uint32_t wildcards_y = match_y->wildcards & WILDCARD_ALL;
 
-  return ( ret && ( wildcards_x == wildcards_y ) );
+  if ( wildcards_x != wildcards_y ) {
+    return false;
+  }
+
+  bool ret = compare_match_strict( &match_x->ofp_match, &match_y->ofp_match );
+
+  ret = ( ( wildcards_x & WILDCARD_IN_DATAPATH_ID || match_x->in_datapath_id == match_y->in_datapath_id ) &&
+          ( wildcards_x & WILDCARD_SLICE_NUMBER || match_x->slice_number == match_y->slice_number ) && ret );
+
+  return ret;
 }
 
 
