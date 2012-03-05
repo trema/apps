@@ -31,6 +31,7 @@
 #include "trema.h"
 #include "fdb.h"
 #include "filter.h"
+#include "icmp.h"
 #include "libpathresolver.h"
 #include "libtopology.h"
 #include "port.h"
@@ -116,6 +117,24 @@ modify_flow_entry( const pathresolver_hop *h, const buffer *packet, uint16_t idl
 
 #ifdef SET_IPV4_REVERSE_PATH
 
+static bool
+packet_to_set_reverse_path( const buffer *packet ) {
+
+  if ( packet_type_ipv4_tcp( packet ) ) {
+    return true;
+  }
+  else if ( packet_type_ipv4_udp( packet ) ) {
+    return true;
+  }
+  else if ( packet_type_ipv4_icmpv4( packet ) ) {
+    packet_info *pinfo = ( packet_info * ) packet->user_data;
+    if ( pinfo->icmpv4_type == ICMP_TYPE_ECHOREQ ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static void
 set_reverse_hop( pathresolver_hop *r_hop, const pathresolver_hop *hop ) {
   r_hop->dpid = hop->dpid;
@@ -154,9 +173,9 @@ set_ipv4_reverse_match( struct ofp_match *r_match, const uint16_t r_in_port, con
   r_match->nw_dst = match->nw_src;
   switch ( match->nw_proto ) {
   case IPPROTO_ICMP:
-    r_match->icmp_type = 0;
-    r_match->icmp_code = 0;
-    r_match->wildcards &= ( OFPFW_ALL - ( OFPFW_ICMP_TYPE + OFPFW_ICMP_CODE ) );
+    r_match->icmp_type = ICMP_TYPE_ECHOREP;
+    r_match->wildcards &= ( OFPFW_ALL - OFPFW_ICMP_TYPE );
+    r_match->wildcards |= OFPFW_ICMP_CODE;
     break;
   case IPPROTO_TCP:
     r_match->tp_src = match->tp_dst;
@@ -337,7 +356,7 @@ make_path( routing_switch *routing_switch, uint64_t in_datapath_id, uint16_t in_
 
 #ifdef SET_IPV4_REVERSE_PATH
 
-  if ( packet_type_ipv4( packet ) ) {
+  if ( packet_to_set_reverse_path( packet ) ) {
     uint32_t hop_count = count_hops( hops );
 
     // send flow entry from tail switch
