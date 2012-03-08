@@ -127,7 +127,7 @@ packet_to_set_reverse_path( const buffer *packet ) {
   else if ( packet_type_ipv4_udp( packet ) ) {
     return true;
   }
-  else if ( packet_type_ipv4_icmpv4( packet ) ) {
+  else if ( packet_type_icmpv4( packet ) ) {
     packet_info *pinfo = ( packet_info * ) packet->user_data;
     if ( pinfo->icmpv4_type == ICMP_TYPE_ECHOREQ ) {
       return true;
