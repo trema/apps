@@ -81,12 +81,11 @@ typedef struct {
 
 
 static void
-modify_flow_entry( const pathresolver_hop *hop, const struct ofp_match match, const uint16_t idle_timeout, const uint16_t out_vid ) {
-  struct ofp_match m = match;
-  m.in_port = hop->in_port_no;
+modify_flow_entry( const pathresolver_hop *hop, struct ofp_match match, const uint16_t idle_timeout, const uint16_t out_vid ) {
+  match.in_port = hop->in_port_no;
 
   openflow_actions *actions = create_actions();
-  uint16_t in_vid = m.dl_vlan;
+  uint16_t in_vid = match.dl_vlan;
 
   if ( out_vid != in_vid ) {
     if ( in_vid != VLAN_NONE && out_vid == VLAN_NONE ) {
@@ -104,7 +103,7 @@ modify_flow_entry( const pathresolver_hop *hop, const struct ofp_match match, co
   const uint16_t priority = UINT16_MAX;
   const uint32_t buffer_id = UINT32_MAX;
   const uint16_t flags = 0;
-  buffer *flow_mod = create_flow_mod( get_transaction_id(), m, get_cookie(),
+  buffer *flow_mod = create_flow_mod( get_transaction_id(), match, get_cookie(),
                                       OFPFC_ADD, idle_timeout, hard_timeout,
                                       priority, buffer_id, 
                                       hop->out_port_no, flags, actions );
