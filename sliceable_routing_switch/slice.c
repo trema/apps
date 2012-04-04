@@ -547,7 +547,6 @@ static void
 load_slice_definitions_from_sqlite( void *user_data ) {
   UNUSED( user_data );
 
-  char *err;
   int ret;
   struct stat st;
   sqlite3 *db;
@@ -584,7 +583,7 @@ load_slice_definitions_from_sqlite( void *user_data ) {
   }
 
   ret = sqlite3_exec( db, "select * from slices",
-                      add_slice_entry_from_sqlite, 0, &err );
+                      add_slice_entry_from_sqlite, 0, NULL );
   if ( ret != SQLITE_OK ) {
     error( "Failed to execute a SQL statement (%s).", sqlite3_errmsg( db ) );
     sqlite3_close( db );
@@ -592,7 +591,7 @@ load_slice_definitions_from_sqlite( void *user_data ) {
   }
 
   ret = sqlite3_exec( db, "select * from bindings",
-                      add_binding_entry_from_sqlite, 0, &err );
+                      add_binding_entry_from_sqlite, 0, NULL );
   if ( ret != SQLITE_OK ) {
     error( "Failed to execute a SQL statement (%s).", sqlite3_errmsg( db ) );
     sqlite3_close( db );

@@ -363,7 +363,6 @@ static void
 load_filter_entries_from_sqlite( void *user_data ) {
   UNUSED( user_data );
 
-  char *err;
   int ret;
   struct stat st;
   sqlite3 *db;
@@ -395,7 +394,7 @@ load_filter_entries_from_sqlite( void *user_data ) {
   }
 
   ret = sqlite3_exec( db, "select * from filter order by priority",
-                      add_filter_entry_from_sqlite, 0, &err );
+                      add_filter_entry_from_sqlite, 0, NULL );
   if ( ret != SQLITE_OK ) {
     error( "Failed to execute a SQL statement (%s).", sqlite3_errmsg( db ) );
     sqlite3_close( db );
