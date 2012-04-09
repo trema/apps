@@ -21,6 +21,7 @@
 
 
 #include <arpa/inet.h>
+#include <assert.h>
 #include <inttypes.h>
 #include "trema.h"
 
@@ -51,7 +52,7 @@ handle_list_switches_reply( const list_element *switches, void *user_data ) {
 
 static void
 dump_flow_stats( uint64_t datapath_id, struct ofp_flow_stats *stats ) {
-  char match_str[ 256 ];
+  char match_str[ 512 ];
   memset( match_str, '\0', sizeof( match_str ) );
   match_to_string( &stats->match, match_str, sizeof( match_str ) );
 
@@ -62,8 +63,12 @@ dump_flow_stats( uint64_t datapath_id, struct ofp_flow_stats *stats ) {
     actions_to_string( stats->actions, actions_length, actions_str, sizeof( actions_str ) );
   }
 
-  info( "[%#016" PRIx64 "] priority = %u, match = [%s], actions = [%s]",
-        datapath_id, stats->priority, match_str, actions_str );
+  info( "[%#016" PRIx64 "] table_id = %u, priority = %u, cookie = %#" PRIx64 ", idle_timeout = %u, "
+        " hard_timeout = %u, duration = %u.%09u, packet_count = %" PRIu64 ", byte_count = %" PRIu64
+        ", match = [%s], actions = [%s]",
+        datapath_id, stats->table_id, stats->priority, stats->cookie, stats->idle_timeout,
+        stats->hard_timeout, stats->duration_sec, stats->duration_nsec, stats->packet_count, stats->byte_count,
+        match_str, actions_str );
 }
 
 
