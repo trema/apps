@@ -1,7 +1,7 @@
 /*
  * Author: Shuji Ishii, Yasunobu Chiba, Lei SUN
  *
- * Copyright (C) 2008-2011 NEC Corporation
+ * Copyright (C) 2008-2012 NEC Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2, as
@@ -31,6 +31,7 @@
 #include "trema.h"
 #include "fdb.h"
 #include "filter.h"
+#include "icmp.h"
 #include "libpathresolver.h"
 #include "libtopology.h"
 #include "port.h"
@@ -38,6 +39,18 @@
 #include "slice.h"
 #include "sliceable_routing_switch.h"
 #include "topology_service_interface_option_parser.h"
+
+
+/*
+#define SET_IPV4_REVERSE_PATH
+This is an experimental option to setup going and returning flows for IPv4 packet.
+This could be reduce a number of packet_in and resolve_path, and is useful for
+accepting packets that are responce to a request packet from dynamic client tdp/udp
+ports like 30001.  For ICMPv4 protocols, just "Echo Reply" is modified as the
+returning flow.
+WARN: The returning flow is modified without filter check.
+      This might be harmful to user's security policy.
+*/
 
 
 static const uint16_t FLOW_TIMER = 60;
@@ -68,14 +81,11 @@ typedef struct {
 
 
 static void
-modify_flow_entry( const pathresolver_hop *h, const buffer *packet, uint16_t idle_timeout, uint16_t out_vid ) {
-  const uint32_t wildcards = 0;
-  struct ofp_match match;
-  set_match_from_packet( &match, h->in_port_no, wildcards, packet );
+modify_flow_entry( const pathresolver_hop *hop, struct ofp_match match, const uint16_t idle_timeout, const uint16_t out_vid ) {
+  match.in_port = hop->in_port_no;
 
-  uint16_t in_vid = match.dl_vlan;
-  uint32_t transaction_id = get_transaction_id();
   openflow_actions *actions = create_actions();
+  uint16_t in_vid = match.dl_vlan;
 
   if ( out_vid != in_vid ) {
     if ( in_vid != VLAN_NONE && out_vid == VLAN_NONE ) {
@@ -87,21 +97,84 @@ modify_flow_entry( const pathresolver_hop *h, const buffer *packet, uint16_t idl
   }
 
   const uint16_t max_len = UINT16_MAX;
-  append_action_output( actions, h->out_port_no, max_len );
+  append_action_output( actions, hop->out_port_no, max_len );
 
   const uint16_t hard_timeout = 0;
   const uint16_t priority = UINT16_MAX;
   const uint32_t buffer_id = UINT32_MAX;
   const uint16_t flags = 0;
-  buffer *flow_mod = create_flow_mod( transaction_id, match, get_cookie(),
+  buffer *flow_mod = create_flow_mod( get_transaction_id(), match, get_cookie(),
                                       OFPFC_ADD, idle_timeout, hard_timeout,
                                       priority, buffer_id, 
-                                      h->out_port_no, flags, actions );
+                                      hop->out_port_no, flags, actions );
 
-  send_openflow_message( h->dpid, flow_mod );
+  send_openflow_message( hop->dpid, flow_mod );
   delete_actions( actions );
   free_buffer( flow_mod );
 }
+
+
+#ifdef SET_IPV4_REVERSE_PATH
+
+
+static bool
+packet_to_set_reverse_path( const buffer *packet ) {
+
+  if ( packet_type_ipv4_tcp( packet ) ) {
+    return true;
+  }
+  else if ( packet_type_ipv4_udp( packet ) ) {
+    return true;
+  }
+  else if ( packet_type_icmpv4( packet ) ) {
+    packet_info *pinfo = ( packet_info * ) packet->user_data;
+    if ( pinfo->icmpv4_type == ICMP_TYPE_ECHOREQ ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+static void
+set_reverse_hop( pathresolver_hop *r_hop, const pathresolver_hop *hop ) {
+  r_hop->dpid = hop->dpid;
+  r_hop->in_port_no = hop->out_port_no;
+  r_hop->out_port_no = hop->in_port_no;
+}
+
+
+static void
+set_ipv4_reverse_match( struct ofp_match *r_match, const uint16_t out_vid, const struct ofp_match *match ) {
+
+  memcpy( r_match, match, sizeof( struct ofp_match ) );
+
+  r_match->in_port = 0;
+  memcpy( r_match->dl_src, match->dl_dst, OFP_ETH_ALEN );
+  memcpy( r_match->dl_dst, match->dl_src, OFP_ETH_ALEN );
+  r_match->dl_vlan = out_vid;
+  r_match->nw_src = match->nw_dst;
+  r_match->nw_dst = match->nw_src;
+  switch ( match->nw_proto ) {
+  case IPPROTO_ICMP:
+    r_match->icmp_type = ICMP_TYPE_ECHOREP;
+    r_match->icmp_code = 0;
+    break;
+  case IPPROTO_TCP:
+    r_match->tp_src = match->tp_dst;
+    r_match->tp_dst = match->tp_src;
+    break;
+  case IPPROTO_UDP:
+    r_match->tp_src = match->tp_dst;
+    r_match->tp_dst = match->tp_src;
+    break;
+  default:
+    break;
+  }
+}
+
+
+#endif // SET_IPV4_REVERSE_PATH
 
 
 static void
@@ -208,19 +281,48 @@ make_path( routing_switch *routing_switch, uint64_t in_datapath_id, uint16_t in_
     return;
   }
 
+  const uint32_t wildcards = 0;
+  struct ofp_match match;
+  set_match_from_packet( &match, 0, wildcards, packet );
+
   // count elements
   uint32_t hop_count = count_hops( hops );
 
   // send flow entry from tail switch
   for ( dlist_element *e = get_last_element( hops ); e != NULL; e = e->prev, hop_count-- ) {
-    uint16_t idle_timer = ( uint16_t ) ( routing_switch->idle_timeout + hop_count );
+    uint16_t idle_timeout = ( uint16_t ) ( routing_switch->idle_timeout + hop_count );
     if ( e->next != NULL ) {
-      modify_flow_entry( e->data, packet, idle_timer, in_vid );
+      modify_flow_entry( e->data, match, idle_timeout, in_vid );
     }
     else {
-      modify_flow_entry( e->data, packet, idle_timer, out_vid );
+      modify_flow_entry( e->data, match, idle_timeout, out_vid );
     }
   } // for(;;)
+
+#ifdef SET_IPV4_REVERSE_PATH
+
+  if ( packet_to_set_reverse_path( packet ) ) {
+    struct ofp_match r_match;
+    set_ipv4_reverse_match( &r_match, out_vid, &match );
+
+    pathresolver_hop r_hop;
+    hop_count = count_hops( hops );
+
+    // send flow entry from head switch
+    for ( dlist_element *e = get_first_element( hops ); e != NULL; e = e->next, hop_count-- ) {
+      uint16_t idle_timeout = ( uint16_t ) ( routing_switch->idle_timeout + hop_count );
+      pathresolver_hop *hop = ( pathresolver_hop * ) e->data;
+      set_reverse_hop( &r_hop, hop);
+      if ( e->prev != NULL ) {
+        modify_flow_entry( &r_hop, r_match, idle_timeout, out_vid );
+      }
+      else {
+        modify_flow_entry( &r_hop, r_match, idle_timeout, in_vid );
+      }
+    } // for(;;)
+  }
+
+#endif // SET_IPV4_REVERSE_PATH
 
   // send packet out for tail switch
   dlist_element *e = get_last_element( hops );
