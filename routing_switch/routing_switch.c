@@ -199,46 +199,6 @@ make_path( routing_switch *routing_switch, uint64_t in_datapath_id, uint16_t in_
 
 
 static void
-set_miss_send_len_maximum( uint64_t datapath_id ) {
-  uint32_t id = get_transaction_id();
-  const uint16_t config_flags = OFPC_FRAG_NORMAL;
-  const uint16_t miss_send_len = UINT16_MAX;
-  buffer *buf = create_set_config( id, config_flags, miss_send_len );
-  send_openflow_message( datapath_id, buf );
-
-  free_buffer( buf );
-}
-
-
-static void
-receive_features_reply( uint64_t datapath_id, uint32_t transaction_id,
-                        uint32_t n_buffers, uint8_t n_tables,
-                        uint32_t capabilities, uint32_t actions,
-                        const list_element *phy_ports, void *user_data ) {
-  UNUSED( transaction_id );
-  UNUSED( n_buffers );
-  UNUSED( n_tables );
-  UNUSED( capabilities );
-  UNUSED( actions );
-  UNUSED( phy_ports );
-  UNUSED( user_data );
-
-  set_miss_send_len_maximum( datapath_id );
-}
-
-
-static void
-handle_switch_ready( uint64_t datapath_id, void *user_data ) {
-  UNUSED( user_data );
-
-  uint32_t id = get_transaction_id();
-  buffer *buf = create_features_request( id );
-  send_openflow_message( datapath_id, buf );
-  free_buffer( buf );
-}
-
-
-static void
 port_status_updated( void *user_data, const topology_port_status *status ) {
   assert( user_data != NULL );
   assert( status != NULL );
@@ -457,19 +417,14 @@ init_second_stage( void *user_data, size_t n_entries, const topology_port_status
   init_age_fdb( routing_switch->fdb );
 
   // Set asynchronous event handlers
-  // (0) Set features_request_reply handler
-  set_features_reply_handler( receive_features_reply, routing_switch );
 
-  // (1) Set switch_ready handler
-  set_switch_ready_handler( handle_switch_ready, routing_switch );
-
-  // (2) Set port status update callback
+  // (1) Set port status update callback
   add_callback_port_status_updated( port_status_updated, routing_switch );
 
-  // (3) Set packet-in handler
+  // (2) Set packet-in handler
   set_packet_in_handler( handle_packet_in, routing_switch );
 
-  // (4) Get all link status
+  // (3) Get all link status
   get_all_link_status( init_last_stage, routing_switch );
 }
 
