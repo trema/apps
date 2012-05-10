@@ -167,41 +167,6 @@ make_path( routing_switch *routing_switch, uint64_t in_datapath_id, uint16_t in_
 
 
 static void
-set_miss_send_len_maximum( uint64_t datapath_id ) {
-  buffer *buf = create_set_config( get_transaction_id(), OFPC_FRAG_NORMAL, UINT16_MAX );
-  send_openflow_message( datapath_id, buf );
-  free_buffer( buf );
-}
-
-
-static void
-receive_features_reply( uint64_t datapath_id, uint32_t transaction_id,
-                        uint32_t n_buffers, uint8_t n_tables,
-                        uint32_t capabilities, uint32_t actions,
-                        const list_element *phy_ports, void *user_data ) {
-  UNUSED( transaction_id );
-  UNUSED( n_buffers );
-  UNUSED( n_tables );
-  UNUSED( capabilities );
-  UNUSED( actions );
-  UNUSED( phy_ports );
-  UNUSED( user_data );
-
-  set_miss_send_len_maximum( datapath_id );
-}
-
-
-static void
-handle_switch_ready( uint64_t datapath_id, void *user_data ) {
-  UNUSED( user_data );
-
-  buffer *buf = create_features_request( get_transaction_id() );
-  send_openflow_message( datapath_id, buf );
-  free_buffer( buf );
-}
-
-
-static void
 port_status_updated( void *user_data, const topology_port_status *status ) {
   assert( user_data != NULL );
   assert( status != NULL );
@@ -414,13 +379,6 @@ init_second_stage( void *user_data, size_t n_entries, const topology_port_status
 
   // Initialize aging FDB
   init_age_fdb( routing_switch->fdb );
-
-  // Set asynchronous event handlers
-  // Set features_request_reply handler
-  set_features_reply_handler( receive_features_reply, routing_switch );
-
-  // Set switch_ready handler
-  set_switch_ready_handler( handle_switch_ready, routing_switch );
 
   // Set port status update callback
   add_callback_port_status_updated( port_status_updated, routing_switch );

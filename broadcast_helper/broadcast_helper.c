@@ -64,17 +64,6 @@ send_packet_out( uint64_t datapath_id, openflow_actions *actions, const buffer *
 
 
 static void
-handle_switch_ready( uint64_t datapath_id, void *user_data ) {
-  UNUSED( user_data );
-
-  uint32_t id = get_transaction_id();
-  buffer *buf = create_features_request( id );
-  send_openflow_message( datapath_id, buf );
-  free_buffer( buf );
-}
-
-
-static void
 port_status_updated( void *user_data, const topology_port_status *status ) {
   assert( user_data != NULL );
   assert( status != NULL );
@@ -255,16 +244,14 @@ init_second_stage( void *user_data, size_t n_entries, const topology_port_status
   init_ports( &broadcast_helper->switches, n_entries, s );
 
   // Set asynchronous event handlers
-  // (1) Set switch_ready handler
-  set_switch_ready_handler( handle_switch_ready, broadcast_helper );
 
-  // (2) Set port status update callback
+  // (1) Set port status update callback
   add_callback_port_status_updated( port_status_updated, broadcast_helper );
 
-  // (3) Set packet-in handler
+  // (2) Set packet-in handler
   set_packet_in_handler( handle_packet_in, broadcast_helper );
 
-  // (4) Get all link status
+  // (3) Get all link status
   get_all_link_status( init_last_stage, broadcast_helper );
 }
 
