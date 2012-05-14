@@ -19,6 +19,7 @@
 
 
 #include <inttypes.h>
+#include <netinet/in.h>
 #include "trema.h"
 #include "topology_service_interface.h"
 #include "topology_table.h"

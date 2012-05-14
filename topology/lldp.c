@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <netinet/ether.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

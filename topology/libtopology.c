@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <netinet/in.h>
 #include "trema.h"
 #include "libtopology.h"
 

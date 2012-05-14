@@ -22,6 +22,7 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <netinet/in.h>
 #include "flow_manager_interface.h"
 #include "trema.h"
 
