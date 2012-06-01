@@ -47,6 +47,7 @@ static const uint16_t PACKET_IN_DISCARD_DURATION = 1;
 
 typedef struct {
   uint16_t idle_timeout;
+  bool handle_arp_with_packetout;
   char slice_db_file[ PATH_MAX ];
   char filter_db_file[ PATH_MAX ];
   uint16_t mode;
@@ -127,6 +128,12 @@ output_packet( const buffer *packet, uint64_t dpid, uint16_t port_no, uint16_t o
 
 
 static void
+output_packet_from_last_switch( const pathresolver_hop *last_hop, const buffer *packet, uint16_t out_vid ) {
+  output_packet( packet, last_hop->dpid, last_hop->out_port_no, out_vid );
+}
+
+
+static void
 handle_setup( int status, const path *p, void *user_data ) {
   UNUSED(p);
   assert(user_data);
@@ -174,6 +181,16 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
     warn( "No available path found ( %#" PRIx64 ":%u -> %#" PRIx64 ":%u ).",
           in_datapath_id, in_port, out_datapath_id, out_port );
     discard_packet_in( in_datapath_id, in_port, packet );
+    return;
+  }
+
+  // check if the packet is ARP or not
+  if ( sliceable_switch->handle_arp_with_packetout && packet_type_arp( packet ) ) {
+    // send packet out for tail switch
+    dlist_element *e = get_last_element( hops );
+    pathresolver_hop *last_hop = e->data;
+    output_packet_from_last_switch( last_hop, packet, out_vid );
+    free_hop_list( hops );
     return;
   }
 
@@ -571,11 +588,15 @@ create_sliceable_switch( const char *topology_service, const switch_options *opt
   // Allocate sliceable_switch object
   sliceable_switch *instance = xmalloc( sizeof( sliceable_switch ) );
   instance->idle_timeout = options->idle_timeout;
+  instance->handle_arp_with_packetout = options->handle_arp_with_packetout;
   instance->switches = NULL;
   instance->fdb = NULL;
   instance->pathresolver = NULL;
 
   info( "idle_timeout is set to %u [sec].", instance->idle_timeout );
+  if ( instance->handle_arp_with_packetout ) {
+    info( "Handle ARP with packetout" );
+  }
 
   // Create pathresolver table
   instance->pathresolver = create_pathresolver();
@@ -637,13 +658,15 @@ delete_sliceable_switch( sliceable_switch *sliceable_switch ) {
 
 
 static char option_description[] = "  -i, --idle_timeout=TIMEOUT  idle timeout value of flow entry\n"
+                                   "  -A, --handle_arp_with_packetout  Handle ARP with packetout\n"
                                    "  -s, --slice_db=DB_FILE      slice database\n"
                                    "  -f, --filter_db=DB_FILE     filter database\n"
                                    "  -m, --loose                 enable loose mac-based slicing\n"
                                    "  -r, --restrict_hosts        restrict hosts on switch port\n";
-static char short_options[] = "i:s:f:mr";
+static char short_options[] = "i:As:f:mr";
 static struct option long_options[] = {
   { "idle_timeout", required_argument, NULL, 'i' },
+  { "handle_arp_with_packetout", 0, NULL, 'A' },
   { "slice_db", required_argument, NULL, 's' },
   { "filter_db", required_argument, NULL, 'f' },
   { "loose", no_argument, NULL, 'm' },
@@ -671,6 +694,7 @@ init_switch_options( switch_options *options, int *argc, char **argv[] ) {
 
   // set default values
   options->idle_timeout = FLOW_TIMER;
+  options->handle_arp_with_packetout = false;
   memset( options->slice_db_file, '\0', sizeof( options->slice_db_file ) );
   memset( options->filter_db_file, '\0', sizeof( options->filter_db_file ) );
   options->mode = 0;
@@ -696,6 +720,10 @@ init_switch_options( switch_options *options, int *argc, char **argv[] ) {
           return;
         }
         options->idle_timeout = ( uint16_t ) idle_timeout;
+        break;
+
+      case 'A':
+        options->handle_arp_with_packetout = true;
         break;
 
       case 's':

@@ -13,6 +13,7 @@ Feature: sliceable_switch help
       Usage: sliceable_switch [OPTION]...
       
         -i, --idle_timeout=TIMEOUT  idle timeout value of flow entry
+        -A, --handle_arp_with_packetout  Handle ARP with packetout
         -s, --slice_db=DB_FILE      slice database
         -f, --filter_db=DB_FILE     filter database
         -m, --loose                 enable loose mac-based slicing
@@ -32,6 +33,7 @@ Feature: sliceable_switch help
       Usage: sliceable_switch [OPTION]...
       
         -i, --idle_timeout=TIMEOUT  idle timeout value of flow entry
+        -A, --handle_arp_with_packetout  Handle ARP with packetout
         -s, --slice_db=DB_FILE      slice database
         -f, --filter_db=DB_FILE     filter database
         -m, --loose                 enable loose mac-based slicing
