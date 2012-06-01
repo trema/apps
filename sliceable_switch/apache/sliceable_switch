@@ -1,0 +1,38 @@
+Listen 8888
+
+<VirtualHost *:8888>
+
+    ServerAdmin administrator@example.com
+
+    DocumentRoot /home/sliceable_switch/script
+
+    <Directory />
+        Options FollowSymLinks
+        AllowOverride None
+	Order deny,allow
+	Deny from all
+    </Directory>
+
+    <Directory /home/sliceable_switch/script/>
+        Options +ExecCGI
+        Script GET /config.cgi
+        Script PUT /config.cgi
+        Script POST /config.cgi
+        Script DELETE /config.cgi
+    </Directory>
+
+    <Location ~ "/(networks|filters)">
+        Order allow,deny
+	Allow from all
+    </Location>
+
+    RewriteEngine on
+    RewriteRule ^/networks(.*)$ /networks$1? [QSA,L]
+    RewriteRule ^/filters(.*)$ /filters$1? [QSA,L]
+
+    AddHandler cgi-script .cgi
+
+    ErrorLog ${APACHE_LOG_DIR}/sliceable_switch_error.log
+    CustomLog ${APACHE_LOG_DIR}/sliceable_switch_access.log combined
+
+</VirtualHost>

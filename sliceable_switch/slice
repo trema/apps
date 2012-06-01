@@ -1,0 +1,307 @@
+#! /usr/bin/perl
+#
+# Slice configuration command for sliceable switch application.
+#
+# Author: Yasunobu Chiba
+#
+# Copyright (C) 2011-2012 NEC Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 2, as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+use strict;
+use warnings;
+use bignum;
+use Slice;
+
+my $Debug = 0;
+
+my $DBFile = "slice.db";
+my $Config;
+
+&main();
+
+sub main(){
+    if(defined($ENV{'SLICE_DB_FILE'})){
+	$DBFile = $ENV{'SLICE_DB_FILE'};
+    }
+
+    my $config = Slice->new($DBFile);
+    if(!defined($config)){
+	error("Failed to open slice database.");
+	exit;
+    }
+
+    my $Config = $config;
+    my $action = $ARGV[0];
+    my $slice = $ARGV[1];
+
+    if(!defined($action)){
+	usage_and_exit();
+    }
+
+    if($action eq "create"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if @ARGV > 3;
+	my $description = $ARGV[2];
+	if($config->create_slice($slice, $description) == Slice::SUCCEEDED){
+	    info("A new slice is created successfully.");
+	}
+	else{
+	    error("Failed to create a slice.");
+	}
+    }
+    elsif($action eq "modify"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if @ARGV != 3;
+	my $description = $ARGV[2];
+	my $ret = $config->update_slice($slice, $description);
+	if($ret == Slice::SUCCEEDED){
+	    info("A slice is modified successfully.");
+	}
+	elsif($ret == Slice::NO_SLICE_FOUND){
+	    error("No slice found.");
+	}
+	else{
+	    error("Failed to modify a slice.");
+	}
+    }
+    elsif($action eq "destroy"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if @ARGV != 2;
+	my $ret = $config->destroy_slice($slice);
+	if($ret == Slice::SUCCEEDED){
+	    info("A slice is destroyed successfully.");
+	}
+	elsif($ret == Slice::NO_SLICE_FOUND){
+	    error("No slice found.");
+	}
+	else{
+	    error("Failed to destroy a slice.");
+	}
+    }
+    elsif($action eq "list"){
+	usage_and_exit() if @ARGV != 1;
+	$config->list_slices();
+    }
+    elsif($action eq "add-port"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if (@ARGV < 5 || @ARGV > 6);
+	my $dpid = oct($ARGV[2]);
+	my $port = oct($ARGV[3]);
+	my $vid = oct($ARGV[4]);
+	my $id = sprintf("%04x%08x:%04x:%04x", $dpid >> 32, $dpid & 0xffffffff, $port, $vid);
+	if(defined($ARGV[5])){
+	    $id = $ARGV[5];
+	}
+	my $ret = $config->add_port($id, $slice, $dpid, $port, $vid);
+	if($ret == Slice::SUCCEEDED){
+	    info("A port is added successfully.");
+	}
+	elsif($ret == Slice::NO_SLICE_FOUND){
+	    error("No slice found.");
+	}
+	else{
+	    error("Failed to add a port.");
+	}
+    }
+    elsif($action eq "delete-port"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if @ARGV != 3;
+	my $id = $ARGV[2];
+	my $ret = $config->delete_binding_by_id($slice, $id);
+	if($ret == Slice::SUCCEEDED){
+	    info("A port is deleted successfully.");
+	}
+	elsif($ret == Slice::NO_SLICE_FOUND){
+	    error("No slice found.");
+	}
+	else{
+	    error("Failed to delete a port.");
+	}
+    }
+    elsif($action eq "show-port"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if (@ARGV < 2 || @ARGV > 3);
+	my $id;
+	if(defined($ARGV[2])){
+	    $id = $ARGV[2];
+	}
+	$config->show_bindings(Slice::BINDING_TYPE_PORT, $slice, $id);
+    }
+    elsif($action eq "add-mac"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if (@ARGV < 3 || @ARGV > 4);
+	my $mac = mac_string_to_int($ARGV[2]);
+	my $id = sprintf("%04x%08x", $mac >> 32, $mac & 0xffffffff);
+	if(defined($ARGV[3])){
+	    $id = $ARGV[3];
+	}
+	my $ret = $config->add_mac($id, $slice, $mac);
+	if($ret == Slice::SUCCEEDED){
+	    info("A MAC-based binding is added successfully.");
+	}
+	elsif($ret == Slice::NO_SLICE_FOUND){
+	    error("No slice found.");
+	}
+	else{
+	    error("Failed to add a MAC-based binding.");
+	}
+    }
+    elsif($action eq "delete-mac"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if @ARGV != 3;
+	my $id = $ARGV[2];
+	my $ret = $config->delete_binding_by_id($slice, $id);
+	if($ret == Slice::SUCCEEDED){
+	    info("A MAC-based binding is deleted successfully.");
+	}
+	elsif($ret == Slice::NO_SLICE_FOUND){
+	    error("No slice found.");
+	}
+	else{
+	    error("Failed to delete a MAC-based binding.");
+	}
+    }
+    elsif($action eq "show-mac"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if (@ARGV < 2 || @ARGV > 3);
+	my $id;
+	if(defined($ARGV[2])){
+	    $id = $ARGV[2];
+	}
+	$config->show_bindings(Slice::BINDING_TYPE_MAC, $slice, $id);
+    }
+    elsif($action eq "add-port-mac"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if (@ARGV < 4 || @ARGV > 5);
+	my $port = $ARGV[2];
+	my $mac = mac_string_to_int($ARGV[3]);
+	my $id = sprintf("%04x%08x", $mac >> 32, $mac & 0xffffffff);
+	if(defined($ARGV[4])){
+	    $id = $ARGV[4];
+	}
+	my $ret = $config->add_mac_on_port($id, $slice, $port, $mac);
+	if($ret == Slice::SUCCEEDED){
+	    info("A MAC-based binding on a port is added successfully.");
+	}
+	elsif($ret == Slice::NO_SLICE_FOUND){
+	    error("No slice found.");
+	}
+	elsif($ret == Slice::NO_BINDING_FOUND){
+	    error("No port binding found.");
+	}
+	else{
+	    error("Failed to add a MAC-based binding on a port.");
+	}
+    }
+    elsif($action eq "delete-port-mac"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if @ARGV != 4;
+	my $port = $ARGV[2]; # TODO: check if $port is valid or not
+	my $id = $ARGV[3];
+	my $ret = $config->delete_binding_by_id($slice, $id);
+	if($ret == Slice::SUCCEEDED){
+	    info("A MAC-based binding on a port is deleted successfully.");
+	}
+	elsif($ret == Slice::NO_SLICE_FOUND){
+	    error("No slice found.");
+	}
+	elsif($ret == Slice::NO_BINDING_FOUND){
+	    error("No port binding found.");
+	}
+	else{
+	    error("Failed to delete a MAC-based binding on a port.");
+	}
+    }
+    elsif($action eq "show-port-mac"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if (@ARGV < 3 || @ARGV > 4);
+	my $port = $ARGV[2]; # TODO: check if $port is valid or not
+	my $id;
+	if(defined($ARGV[3])){
+	    $id = $ARGV[3];
+	}
+	$config->show_bindings(Slice::BINDING_TYPE_PORT_MAC, $slice, $id);
+    }
+    elsif($action eq "show"){
+	usage_and_exit() if !defined($slice);
+	usage_and_exit() if @ARGV != 2;
+	if($config->show_description($slice) == Slice::SUCCEEDED){
+	    $config->show_bindings(Slice::BINDING_TYPE_ALL, $slice);
+	}
+    }
+    else{
+	usage_and_exit();
+    }
+
+    $config->close();
+}
+
+
+sub mac_string_to_int(){
+    my ($string) = @_;
+
+    $string =~ s/://g;
+
+    return hex( "0x" . $string);
+}
+
+
+sub usage_and_exit(){
+    if(defined($Config)){
+	$Config->close();
+    }
+    usage();
+    exit;
+}
+
+
+sub usage(){
+    printf(STDERR "Usage:\n");
+    printf(STDERR "  slice list\n");
+    printf(STDERR "  slice create SLICE_ID [DESCRIPTION]\n");
+    printf(STDERR "  slice modify SLICE_ID DESCRIPTION\n");
+    printf(STDERR "  slice destroy SLICE_ID\n");
+    printf(STDERR "  slice add-port SLICE_ID DPID PORT VID [BINDING_ID]\n");
+    printf(STDERR "  slice delete-port SLICE_ID BINDING_ID\n");
+    printf(STDERR "  slice show-port SLICE_ID [BINDING_ID]\n");
+    printf(STDERR "  slice add-mac SLICE_ID ADDRESS [BINDING_ID]\n");
+    printf(STDERR "  slice delete-mac SLICE_ID BINDING_ID\n");
+    printf(STDERR "  slice add-port-mac SLICE_ID PORT_BINDING_ID ADDRESS [BINDING_ID]\n");
+    printf(STDERR "  slice delete-port-mac SLICE_ID PORT_BINDING_ID BINDING_ID\n");
+    printf(STDERR "  slice show-port-mac SLICE_ID PORT_BINDING_ID [BINDING_ID]\n");
+    printf(STDERR "  slice show-mac SLICE_ID [BINDING_ID]\n");
+    printf(STDERR "  slice show SLICE_ID\n");
+}
+
+
+sub debug(){
+    if($Debug){
+	printf(@_);
+	printf("\n");
+    }
+}
+
+
+sub info(){
+    printf(@_);
+    printf("\n");
+}
+
+
+sub error(){
+    printf(STDERR @_);
+    printf(STDERR "\n");
+}

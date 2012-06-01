@@ -1,6 +1,0 @@
-*.db
-*.o
-*~
-/.depends
-/sliceable_routing_switch
-/checker
