@@ -71,10 +71,11 @@ sub close(){
 sub create_slice(){
     my ($self, $slice_id, $description) = @_;
 
+    my $slice_number = 1;
     my $sth = $self->{'dbh'}->prepare("SELECT MAX(number) FROM slices");
     my $ret = $sth->execute();
     my $row = $sth->fetch();
-    my $slice_number = $row->[0] + 1;
+    $slice_number = $row->[0] + 1 if defined($row->[0]);
 
     if(!defined($description)){
 	$description = "";

@@ -38,6 +38,7 @@
 #include "slice.h"
 #include "sliceable_switch.h"
 #include "topology_service_interface_option_parser.h"
+#include "libpath.h"
 
 
 static const uint16_t FLOW_TIMER = 60;
@@ -67,41 +68,12 @@ typedef struct {
 } port_params;
 
 
-static void
-modify_flow_entry( const pathresolver_hop *h, const buffer *packet, uint16_t idle_timeout, uint16_t out_vid ) {
-  const uint32_t wildcards = 0;
-  struct ofp_match match;
-  set_match_from_packet( &match, h->in_port_no, wildcards, packet );
-
-  uint16_t in_vid = match.dl_vlan;
-  uint32_t transaction_id = get_transaction_id();
-  openflow_actions *actions = create_actions();
-
-  if ( out_vid != in_vid ) {
-    if ( in_vid != VLAN_NONE && out_vid == VLAN_NONE ) {
-      append_action_strip_vlan( actions );
-    }
-    else {
-      append_action_set_vlan_vid( actions, out_vid );
-    }
-  }
-
-  const uint16_t max_len = UINT16_MAX;
-  append_action_output( actions, h->out_port_no, max_len );
-
-  const uint16_t hard_timeout = 0;
-  const uint16_t priority = UINT16_MAX;
-  const uint32_t buffer_id = UINT32_MAX;
-  const uint16_t flags = 0;
-  buffer *flow_mod = create_flow_mod( transaction_id, match, get_cookie(),
-                                      OFPFC_ADD, idle_timeout, hard_timeout,
-                                      priority, buffer_id, 
-                                      h->out_port_no, flags, actions );
-
-  send_openflow_message( h->dpid, flow_mod );
-  delete_actions( actions );
-  free_buffer( flow_mod );
-}
+typedef struct packet_out_params {
+  buffer *packet;
+  uint64_t out_datapath_id;
+  uint16_t out_port_no;
+  uint16_t out_vid;
+} packet_out_params;
 
 
 static void
@@ -155,18 +127,15 @@ output_packet( const buffer *packet, uint64_t dpid, uint16_t port_no, uint16_t o
 
 
 static void
-output_packet_from_last_switch( const pathresolver_hop *last_hop, const buffer *packet, uint16_t out_vid ) {
-  output_packet( packet, last_hop->dpid, last_hop->out_port_no, out_vid );
-}
+handle_setup( int status, const path *p, void *user_data ) {
+  UNUSED(p);
+  assert(user_data);
 
-
-static uint32_t
-count_hops( const dlist_element *hops ) {
-  uint32_t i = 0;
-  for ( const dlist_element *e = hops; e != NULL; e = e->next ) {
-    i++;
+  packet_out_params *params = user_data;
+  if ( status == SETUP_SUCCEEDED ) {
+    output_packet( params->packet, params->out_datapath_id, params->out_port_no, params->out_vid );
   }
-  return i;
+  xfree( params );
 }
 
 
@@ -208,24 +177,35 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
     return;
   }
 
-  // count elements
-  uint32_t hop_count = count_hops( hops );
+  const uint32_t wildcards = 0;
+  struct ofp_match match;
+  set_match_from_packet( &match, 0, wildcards, packet );
 
-  // send flow entry from tail switch
-  for ( dlist_element *e = get_last_element( hops ); e != NULL; e = e->prev, hop_count-- ) {
-    uint16_t idle_timer = ( uint16_t ) ( sliceable_switch->idle_timeout + hop_count );
-    if ( e->next != NULL ) {
-      modify_flow_entry( e->data, packet, idle_timer, in_vid );
-    }
-    else {
-      modify_flow_entry( e->data, packet, idle_timer, out_vid );
-    }
+  const uint16_t hard_timeout = 0;
+  const uint16_t priority = UINT16_MAX;
+  path *p = create_path( match, priority, sliceable_switch->idle_timeout, hard_timeout );
+  assert( p != NULL );
+  for ( dlist_element *e = get_first_element( hops ); e != NULL; e = e->next ) {
+    pathresolver_hop *rh = e->data;
+    hop *h = create_hop( rh->dpid, rh->in_port_no, rh->out_port_no, NULL );
+    assert( h != NULL );
+    append_hop_to_path( p, h );
   } // for(;;)
 
-  // send packet out for tail switch
   dlist_element *e = get_last_element( hops );
   pathresolver_hop *last_hop = e->data;
-  output_packet_from_last_switch( last_hop, packet, out_vid );
+  packet_out_params *params = xmalloc( sizeof( struct packet_out_params ) );
+  params->packet = duplicate_buffer( packet );
+  params->out_datapath_id = last_hop->dpid;
+  params->out_port_no = last_hop->out_port_no;
+  params->out_vid = out_vid;
+
+  bool ret = setup_path( p, handle_setup, params, NULL, NULL );
+  if ( ret != true ) {
+    error( "Failed to set up path." );
+  }
+
+  delete_path( p );
 
   // free them
   free_hop_list( hops );
@@ -799,6 +779,8 @@ main( int argc, char *argv[] ) {
 
   // Initialize Trema world
   init_trema( &argc, &argv );
+  // Init path management library (libpath)
+  init_path();
   switch_options options;
   init_switch_options( &options, &argc, &argv );
   init_topology_service_interface_options( &argc, &argv );
@@ -811,6 +793,8 @@ main( int argc, char *argv[] ) {
 
   // Finalize sliceable_switch
   delete_sliceable_switch( sliceable_switch );
+  // Finalize path management library (libpath)
+  finalize_path();
 
   return 0;
 }

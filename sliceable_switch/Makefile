@@ -7,8 +7,8 @@ GEM_BIN = `ruby -e 'require "rubygems"; puts Gem::bindir'`
 TREMA_APPS = ..
 
 CC = gcc
-CFLAGS = $(shell $(TREMA)/trema-config --cflags) -I$(TREMA_APPS)/topology -std=gnu99 -g -D_GNU_SOURCE -Wall
-LDFLAGS = $(shell $(TREMA)/trema-config --libs) -L$(TREMA_APPS)/topology -ltopology
+CFLAGS = $(shell $(TREMA)/trema-config --cflags) -I$(TREMA_APPS)/topology -I$(TREMA_APPS)/flow_manager -std=gnu99 -g -D_GNU_SOURCE -Wall
+LDFLAGS = $(shell $(TREMA)/trema-config --libs) -L$(TREMA_APPS)/topology -ltopology -L$(TREMA_APPS)/flow_manager -lpath
 
 TARGET = sliceable_switch
 SRCS = fdb.c filter.c libpathresolver.c port.c sliceable_switch.c slice.c redirector.c

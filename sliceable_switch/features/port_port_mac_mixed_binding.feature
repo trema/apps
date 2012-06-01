@@ -31,6 +31,7 @@ Feature: control multiple openflow switchies using sliceable_switch
 
       run { path "../apps/topology/topology" }
       run { path "../apps/topology/topology_discovery" }
+      run { path "../apps/flow_manager/flow_manager" }
 
       event :port_status => "topology", :packet_in => "filter", :state_notify => "topology"
       filter :lldp => "topology_discovery", :packet_in => "sliceable_switch"
