@@ -16,16 +16,23 @@ list.
 How to build
 ------------
 
-  Build Trema and sliceable switch
+  Build Trema
 
         $ git clone git://github.com/trema/trema.git trema
         $ git clone git://github.com/trema/apps.git apps
         $ cd trema
         $ ./build.rb
-        $ cd ../apps/sliceable_switch
+
+  Build Topology and Flow manager
+
+        $ cd ../apps/topology
+        $ make
+        $ cd ../flow_manager
+        $ make
 
   Build sliceable switch and setup databases
 
+        $ cd ../sliceable_switch
         $ make
         $ sudo apt-get install sqlite3 libdbi-perl libdbd-sqlite3-perl
         $ ./create_tables.sh
