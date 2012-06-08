@@ -22,6 +22,9 @@ FEATURES += port_mac_mixed_binding.feature
 FEATURES += port_port_mac_mixed_binding.feature mac_port_mac_mixed_binding.feature
 FEATURES += mac_binding_multiple_slices.feature port_binding_multiple_slices.feature
 FEATURES += mac_binding_65535_slices.feature
+FEATURES += switch_restart.feature
+
+LOGGING_LEVEL=debug
 
 DEPENDS = .depends
 
@@ -50,7 +53,7 @@ test: $(FEATURES)
 	( \
 	  file=`pwd`/features/$@; \
 	  cd ${TREMA}; \
-	  sudo ${GEM_BIN}/cucumber -r features -r ../apps/sliceable_switch/features $$file || exit 1 \
+	  sudo LOGGING_LEVEL=${LOGGING_LEVEL} ${GEM_BIN}/cucumber -r features -r ../apps/sliceable_switch/features $$file || exit 1 \
 	)
 
 checker.feature: checker

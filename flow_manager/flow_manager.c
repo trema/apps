@@ -27,6 +27,23 @@
 #include "trema.h"
 
 
+#define ADD_TIMESPEC( _a, _b, _return )                       \
+  do {                                                        \
+    ( _return )->tv_sec = ( _a )->tv_sec + ( _b )->tv_sec;    \
+    ( _return )->tv_nsec = ( _a )->tv_nsec + ( _b )->tv_nsec; \
+    if ( ( _return )->tv_nsec >= 1000000000 ) {               \
+      ( _return )->tv_sec++;                                  \
+      ( _return )->tv_nsec -= 1000000000;                     \
+    }                                                         \
+  }                                                           \
+  while ( 0 )
+
+#define TIMESPEC_GREATER_THAN( _a, _b )                          \
+  ( ( ( _a )->tv_sec == ( _b )->tv_sec ) ?                    \
+    ( ( _a )->tv_nsec > ( _b )->tv_nsec ) :                   \
+    ( ( _a )->tv_sec > ( _b )->tv_sec ) )
+
+
 typedef struct {
   hash_table *id;
   hash_table *entry;
@@ -63,7 +80,11 @@ typedef struct {
   int n_barriers;
   messenger_context_handle *context_handle;  
   list_element *entries;
+  struct timespec expires_at;
 } flow_entry_group;
+
+
+static const struct timespec TRANSACTION_TIMEOUT = { 5, 0 };
 
 
 static void
@@ -761,9 +782,11 @@ install_flow_entries_to_switches( flow_entry_group *group ) {
   list_element *element = group->entries;
   while ( element != NULL && count < group->n_entries ) {
     flow_entry_private *entry = element->data;
-    ret &= install_flow_entry_to_switch( entry );
-    if ( ret ) {
+    if ( install_flow_entry_to_switch( entry ) ) {
       group->n_barriers++;
+    }
+    else {
+      ret = false;
     }
     element = element->next;
     count++;
@@ -852,6 +875,8 @@ create_flow_entry_group( flow_entry_group_setup_request *request ) {
   group->n_active_entries = 0;
   group->n_barriers = 0;
   create_list( &group->entries );
+  group->expires_at.tv_sec = 0;
+  group->expires_at.tv_nsec = 0;
 
   int count = 0;
   size_t offset = 0;
@@ -915,9 +940,11 @@ remove_flow_entries_from_switches( flow_entry_group *group ) {
   while ( element != NULL ) {
     flow_entry_private *entry = element->data;
     if ( entry->state == INSTALL_IN_PROGRESS || entry->state == INSTALL_CONFIRMED ) {
-      ret &= remove_flow_entry_from_switch( entry );
-      if ( ret ) {
+      if ( remove_flow_entry_from_switch( entry ) ) {
         group->n_barriers++;
+      }
+      else {
+        ret = false;
       }
     }
     element = element->next;
@@ -973,6 +1000,8 @@ handle_setup_request( const messenger_context_handle *handle,
     free_flow_entry_group( group );
     return;
   }
+  clock_gettime( CLOCK_MONOTONIC, &group->expires_at );
+  ADD_TIMESPEC( &group->expires_at, &TRANSACTION_TIMEOUT, &group->expires_at );
 
   group->context_handle = copy_messenger_context_handle( handle );
   add_flow_entry_group( group );
@@ -1002,8 +1031,65 @@ handle_teardown_request( const messenger_context_handle *handle,
     return;
   }
 
+  bool ret = remove_flow_entries_from_switches( group );
+  if ( ret == false ) {
+    error( "Failed to remove flow entries to switches." );
+    buffer *reply = create_flow_entry_group_setup_reply( group->id, SWITCH_ERROR );
+    send_reply_message( handle, MESSENGER_FLOW_ENTRY_GROUP_TEARDOWN_REPLY,
+                        reply->data, reply->length );
+    free_buffer( reply );
+    free_flow_entry_group( group );
+    return;
+  }
+  clock_gettime( CLOCK_MONOTONIC, &group->expires_at );
+  ADD_TIMESPEC( &group->expires_at, &TRANSACTION_TIMEOUT, &group->expires_at );
+
   group->context_handle = copy_messenger_context_handle( handle );
-  remove_flow_entries_from_switches( group );
+}
+
+
+static void
+age_transaction_entries( void *user_data ) {
+  UNUSED( user_data );
+  struct timespec now;
+  clock_gettime( CLOCK_MONOTONIC, &now );
+
+  hash_iterator iter;
+  hash_entry *e;
+  init_hash_iterator( flow_entry_group_db.id, &iter );
+  while ( ( e = iterate_hash_next( &iter ) ) != NULL ) {
+    flow_entry_group *group = e->value;
+    if ( group->state != INSTALL_IN_PROGRESS && group->state != REMOVE_IN_PROGRESS ) {
+      continue;
+    }
+    if ( TIMESPEC_GREATER_THAN( &group->expires_at, &now ) ) {
+      continue;
+    }
+    if ( group->state == INSTALL_IN_PROGRESS ) {
+      update_flow_entry_group_state( group, INSTALL_FAILED );
+      if ( group->context_handle != NULL ) {
+        buffer *reply = create_flow_entry_group_setup_reply( group->id, SWITCH_ERROR );
+        send_reply_message( group->context_handle, MESSENGER_FLOW_ENTRY_GROUP_SETUP_REPLY,
+                            reply->data, reply->length );
+        free_buffer( reply );
+        free_messenger_context_handle( group->context_handle );
+        group->context_handle = NULL;
+      }
+      remove_flow_entries_from_switches( group );
+    }
+    else { // group->state == REMOVE_IN_PROGRESS
+      update_flow_entry_group_state( group, REMOVE_FAILED );
+      if ( group->context_handle != NULL ) {
+        buffer *reply = create_flow_entry_group_teardown_reply( group->id, SWITCH_ERROR );
+        send_reply_message( group->context_handle, MESSENGER_FLOW_ENTRY_GROUP_TEARDOWN_REPLY,
+                            reply->data, reply->length );
+        free_buffer( reply );
+        free_messenger_context_handle( group->context_handle );
+        group->context_handle = NULL;
+      }
+    }
+    delete_flow_entry_group( group->id );
+  }
 }
 
 
@@ -1280,6 +1366,9 @@ main( int argc, char *argv[] ) {
 
   // Create a database for managing flow entries
   create_flow_entry_group_db();
+
+  // Set callback for handling timer event
+  add_periodic_event_callback( 1, age_transaction_entries, NULL );
 
   // Set callbacks for handling OpenFlow events
   set_barrier_reply_handler( handle_barrier_reply, NULL );

@@ -43,6 +43,8 @@
 
 static const uint16_t FLOW_TIMER = 60;
 static const uint16_t PACKET_IN_DISCARD_DURATION = 1;
+static const uint16_t PRIORITY = UINT16_MAX;
+static const uint16_t DISCARD_PRIORITY = UINT16_MAX;
 
 
 typedef struct {
@@ -156,7 +158,6 @@ discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet 
 
   const uint16_t idle_timeout = 0;
   const uint16_t hard_timeout = PACKET_IN_DISCARD_DURATION;
-  const uint16_t priority = UINT16_MAX;
   const uint32_t buffer_id = UINT32_MAX;
   const uint16_t flags = 0;
 
@@ -165,7 +166,7 @@ discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet 
 
   buffer *flow_mod = create_flow_mod( get_transaction_id(), match, get_cookie(),
                                       OFPFC_ADD, idle_timeout, hard_timeout,
-                                      priority, buffer_id,
+                                      DISCARD_PRIORITY, buffer_id,
                                       OFPP_NONE, flags, NULL );
 
   send_openflow_message( datapath_id, flow_mod );
@@ -196,11 +197,10 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
 
   const uint32_t wildcards = 0;
   struct ofp_match match;
-  set_match_from_packet( &match, 0, wildcards, packet );
+  set_match_from_packet( &match, in_port, wildcards, packet );
 
   const uint16_t hard_timeout = 0;
-  const uint16_t priority = UINT16_MAX;
-  path *p = create_path( match, priority, sliceable_switch->idle_timeout, hard_timeout );
+  path *p = create_path( match, PRIORITY, sliceable_switch->idle_timeout, hard_timeout );
   assert( p != NULL );
   for ( dlist_element *e = get_first_element( hops ); e != NULL; e = e->next ) {
     pathresolver_hop *rh = e->data;
@@ -236,8 +236,8 @@ port_status_updated( void *user_data, const topology_port_status *status ) {
 
   sliceable_switch *sliceable_switch = user_data;
 
-  debug( "Port status updated: dpid:%#" PRIx64 ", port:%u, %s, %s",
-         status->dpid, status->port_no,
+  debug( "Port status updated: dpid:%#" PRIx64 ", port:%u(%s), %s, %s",
+         status->dpid, status->port_no, status->name,
          ( status->status == TD_PORT_UP ? "up" : "down" ),
          ( status->external == TD_PORT_EXTERNAL ? "external" : "internal or inactive" ) );
 
@@ -255,7 +255,7 @@ port_status_updated( void *user_data, const topology_port_status *status ) {
       update_port( p, status->external );
       return;
     }
-    add_port( &sliceable_switch->switches, status->dpid, status->port_no, status->external );
+    add_port( &sliceable_switch->switches, status->dpid, status->port_no, status->name, status->external );
   }
   else {
     if ( p == NULL ) {
@@ -263,6 +263,12 @@ port_status_updated( void *user_data, const topology_port_status *status ) {
       return;
     }
     delete_port( &sliceable_switch->switches, p );
+    struct ofp_match match;
+    memset( &match, 0, sizeof( struct ofp_match ) );
+    match.wildcards = OFPFW_ALL;
+    match.wildcards &= ~OFPFW_IN_PORT;
+    match.in_port = status->port_no;
+    teardown_path_by_match( match );
   }
 }
 
@@ -430,6 +436,8 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
 
 allow:
   {
+    teardown_path( datapath_id, match, PRIORITY );
+
     uint16_t out_port;
     uint64_t out_datapath_id;
 
@@ -485,7 +493,7 @@ static void
 init_ports( list_element **switches, size_t n_entries, const topology_port_status *s ) {
   for ( size_t i = 0; i < n_entries; i++ ) {
     if ( s[ i ].status == TD_PORT_UP ) {
-      add_port( switches, s[ i ].dpid, s[ i ].port_no, s[ i ].external );
+      add_port( switches, s[ i ].dpid, s[ i ].port_no, s[ i ].name, s[ i ].external );
     }
   }
 }

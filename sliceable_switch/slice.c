@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "libpath.h"
 #include "slice.h"
 #include "port.h"
 #include "filter.h"
@@ -520,26 +521,12 @@ delete_dynamic_port_slice_bindings( uint64_t datapath_id, uint16_t port ) {
 
 
 static void
-delete_flows( switch_info *sw, void *user_data ) {
+delete_all_flows(){
   struct ofp_match match;  
   memset( &match, 0, sizeof( struct ofp_match ) );
   match.wildcards = OFPFW_ALL;
 
-  buffer *flow_mod = create_flow_mod( get_transaction_id(), match, get_cookie(),
-                                      OFPFC_DELETE, 0, 0, 0, 0, OFPP_NONE, 0, NULL );
-
-  send_openflow_message( sw->dpid, flow_mod );
-  free_buffer( flow_mod );
-}
-
-
-static void
-delete_all_flows(){
-  if ( switch_instance == NULL ) {
-    return;
-  }
-
-  foreach_switch( switch_instance->switches, delete_flows, NULL );
+  teardown_path_by_match( match );
 }
 
 

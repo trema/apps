@@ -452,7 +452,9 @@ teardown_path_by_match( struct ofp_match match ) {
   while ( ( ( e = iterate_hash_next( &iter ) ) != NULL ) ) {
     path_private *entry = e->value;
     if ( compare_match( &entry->public.match, &match ) ) {
-        ret &= send_teardown_request( entry->id );
+      if ( !send_teardown_request( entry->id ) ) {
+        ret = false;
+      }
     }
   }
 
@@ -545,6 +547,11 @@ handle_reply( uint16_t tag, void *data, size_t length, void *user_data ) {
         error( "Failed to tear down ( id = %#" PRIx64 ", status = %#x ).", reply->id, reply->status );
       }
       // FIXME: notify to caller here?
+      path_private *entry = lookup_path_entry_by_id( reply->id );
+      if ( entry != NULL ) {
+        delete_path_entry( reply->id );
+        delete_path( ( path * ) entry );
+      }
     }
     break;
     default:

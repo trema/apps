@@ -41,7 +41,7 @@ typedef struct switch_info {
 
 
 void delete_port( list_element **switches, port_info *delete_port );
-void add_port( list_element **switches, uint64_t dpid, uint16_t port_no, uint8_t external );
+void add_port( list_element **switches, uint64_t dpid, uint16_t port_no, const char *name, uint8_t external );
 void update_port( port_info *port, uint8_t external );
 void delete_all_ports( list_element **switches );
 port_info *lookup_port( list_element *switches, uint64_t dpid, uint16_t port_no );

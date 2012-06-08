@@ -103,10 +103,10 @@ delete_port( list_element **switches, port_info *delete_port ) {
 
 
 void
-add_port( list_element **switches, uint64_t dpid, uint16_t port_no, uint8_t external ) {
+add_port( list_element **switches, uint64_t dpid, uint16_t port_no, const char *name, uint8_t external ) {
   assert( port_no != 0 );
 
-  info( "Adding a port: dpid = %#" PRIx64 ", port = %u", dpid, port_no );
+  info( "Adding a port: dpid = %#" PRIx64 ", port = %u ( \"%s\" )", dpid, port_no, name );
 
   // lookup switch
   switch_info *sw = lookup_switch( *switches, dpid );
