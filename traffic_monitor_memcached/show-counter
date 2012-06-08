@@ -1,0 +1,139 @@
+#! /usr/bin/env ruby
+#
+# Forwarding database dumper
+#
+# Author: Kazushi SUGYO
+#
+# Copyright (C) 2008-2011 NEC Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 2, as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+
+require 'rubygems'
+require 'memcache'
+
+
+#
+# Forwarding database dumper class
+#
+class Dumper < MemCache
+  # returns slabs statistics for each memcached server
+  def slabs server
+    stats = {}
+    with_socket_management(server) do | socket |
+      socket.write "stats slabs\r\n"
+      while line = socket.gets do
+        raise_on_error_response! line
+        break if line == "END\r\n"
+        if line =~ /\ASTAT ((\d+):)?([\S]+) (\d+)/
+          id, name, value = $2, $3, $4
+          if id.nil?
+            stats[name] = value.to_i
+          else
+            if stats[id.to_i].nil?
+              stats[id.to_i] = {}
+            end
+            stats[id.to_i][name] = value.to_i
+          end
+        end
+      end
+    end
+    stats
+  end
+
+
+  # returns cacedump for each memcached server
+  def cachedump server, slab_id, count
+    keys = {}
+    with_socket_management(server) do | socket |
+      socket.write "stats cachedump #{ slab_id } #{ count }\r\n"
+      while line = socket.gets do
+        raise_on_error_response! line
+        break if line == "END\r\n"
+        if line =~ /\AITEM (.+) \[(\d+) b; ([\d]+) s\]/
+          key, expiry = $1, $3.to_i
+          keys[key] = expiry
+        end
+      end
+    end
+    keys
+  end
+
+
+  # display counter
+  def dump_all prefix
+    servers.each do | server |
+      slabs(server).each do | id, value |
+        next if not id.kind_of? Integer
+        cachedump(server, id, value[ "used_chunks" ]).each do | key, expiry |
+          value = get(key)
+          value = "(nil)" if value.nil?
+          split_key = key.split( "-", 2 )
+	  if split_key[ 0 ] == prefix 
+            print "#{ split_key[ 1 ] },#{ value }\n"
+	  end
+        end
+      end
+    end
+  end
+
+
+  # display memcached statistics
+  def stats_all
+    server_stats = stats
+    server_stats.each do | key, stats |
+      print "#{ key }\n"
+      stats.sort.each do | key, value |
+        print "  #{ key }=#{ value }\n"
+      end
+    end
+  end
+
+
+  # flush data stored in memcached
+  def flush_all
+    servers.each do | server |
+      with_socket_management(server) do | socket |
+        socket.write "flush_all\r\n"
+        while line = socket.gets do
+          raise_on_error_response! line
+          break if line == "OK\r\n"
+        end
+      end
+    end
+  end
+end
+
+
+dumper = Dumper.new '127.0.0.1:11211'
+command = ARGV.shift
+if command == "stats"
+  dumper.stats_all
+elsif command == "flush"
+  dumper.flush_all
+elsif command == "fdb"
+  print "datapath-id,mac-address,port-no\n"
+  dumper.dump_all "fdb"
+else
+  print "mac-address,packet-count\n"
+  dumper.dump_all "counter"
+end
+
+
+### Local variables:
+### mode: Ruby
+### coding: utf-8
+### indent-tabs-mode: nil
+### End:
