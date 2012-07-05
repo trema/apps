@@ -142,7 +142,9 @@ init_topology_client( VALUE self, VALUE service_name ) {
   argv[ 1 ] = NULL; 
   
   init_topology_service_interface_options( &argc, &argv );
+  xfree( argv );
   init_libtopology( get_topology_service_interface_name() );
+  
   subscribe_topology( topology_subscribed, ( void * ) self );
   return self;
 }
@@ -275,7 +277,7 @@ Init_topology_client() {
   rb_define_method( cTopologyLinkStatus, "from_portno", topology_link_status_from_portno, 0 );
   rb_define_method( cTopologyLinkStatus, "to_portno", topology_link_status_to_portno, 0 );
   rb_define_method( cTopologyLinkStatus, "status", topology_link_status_status, 0 );
-  rb_require( "topology-client" );
+  rb_require( "topology/topology-client" );
 }
 
 
