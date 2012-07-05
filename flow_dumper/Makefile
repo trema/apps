@@ -2,7 +2,7 @@
 # Copyright (C) 2011 NEC Corporation
 #
 
-TREMA = ../../trema
+TREMA = ../../
 
 CC = gcc
 CFLAGS = $(shell $(TREMA)/trema-config --cflags) -std=gnu99 -D_GNU_SOURCE -g -Wall
