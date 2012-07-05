@@ -2,7 +2,7 @@
 # Copyright (C) 2011 NEC Corporation
 #
 
-TREMA = ../../trema
+TREMA = ../../
 
 CC = gcc
 AR = ar
