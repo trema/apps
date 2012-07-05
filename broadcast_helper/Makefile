@@ -2,7 +2,7 @@
 # Copyright (C) 2011 NEC Corporation
 #
 
-TREMA = ../../trema
+TREMA = ../../
 SHELL = /bin/sh
 
 CC = gcc
