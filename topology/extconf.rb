@@ -57,19 +57,6 @@ unless find_library( "rt", "clock_gettime" )
 end
 
 
-unless find_library( "sqlite3", "sqlite3_open" )
-  error_exit error_lib_missing( "libsqlite3", "libsqlite3-dev" )
-end
-
-
-unless find_library("trema", "create_hello")
-  error_exit <<-EOF
-ERROR: Trema is not compiled yet
-Please try the following command
-%./build.rb
-EOF
-end
-
 depend_src = %w( libtopology topology_service_interface_option_parser topology-client )
 depend_c_src = depend_src.map { | basename | "#{ basename }.c" }
 depend_objs = depend_src.map { | basename | "#{ basename }.o" }
