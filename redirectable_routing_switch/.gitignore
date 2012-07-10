@@ -1,9 +1,6 @@
 *.a
-*.log
 *.o
-*.so
 *.swp
 *~
 .depends
-Makefile
 redirectable_routing_switch

@@ -5,11 +5,11 @@
 TREMA = ../../trema
 
 CC = gcc
-CFLAGS = $(shell $(TREMA)/trema-config --cflags) -std=gnu99 -D_GNU_SOURCE -g -Wall
-LDFLAGS = $(shell $(TREMA)/trema-config --libs)
+CFLAGS = $(shell $(TREMA)/trema-config --cflags) -I../topology -std=gnu99 -D_GNU_SOURCE -g -Wall
+LDFLAGS = $(shell $(TREMA)/trema-config --libs) -L../topology -ltopology -lsqlite3
 
-TARGET = flow_dumper
-SRCS = flow_dumper.c
+TARGET = redirectable_routing_switch
+SRCS = authenticator.c fdb.c libpathresolver.c port.c redirectable_routing_switch.c redirector.c
 OBJS = $(SRCS:.c=.o)
 
 DEPENDS = .depends
@@ -31,5 +31,7 @@ depend:
 
 clean:
 	@rm -rf $(DEPENDS) $(OBJS) $(TARGET) *~
+
+run_acceptance_test:
 
 -include $(DEPENDS)
