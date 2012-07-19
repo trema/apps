@@ -55,12 +55,14 @@ class ShowSwitchFeatures < Controller
   end
 
   
-  # TODO: stats_reply datapath_id, message
-  def stats_reply message
+  def stats_reply datapath_id, message
     desc = message.stats.find do | each |
       each.is_a?( DescStatsReply )
     end
-    shutdown! if desc.nil?
+    if desc.nil?
+      warn "No description statistics is avaliable."
+      shutdown!
+    end
 
     info "Manufacturer description: #{ desc.mfr_desc }"
     info "Hardware description: #{ desc.hw_desc }"
@@ -68,7 +70,7 @@ class ShowSwitchFeatures < Controller
     info "Serial number: #{ desc.serial_num }"
     info "Human readable description of datapath: #{ desc.dp_desc }"
 
-    send_message message.datapath_id, FeaturesRequest.new
+    send_message datapath_id, FeaturesRequest.new
   end
 
 
