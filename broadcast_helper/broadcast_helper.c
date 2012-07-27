@@ -35,6 +35,9 @@
 
 typedef struct {
   list_element *switches;
+
+  bool second_stage_down;
+  bool last_stage_down;
 } broadcast_helper;
 
 
@@ -69,6 +72,9 @@ port_status_updated( void *user_data, const topology_port_status *status ) {
   assert( status != NULL );
 
   broadcast_helper *broadcast_helper = user_data;
+  if ( broadcast_helper->second_stage_down == false ) {
+    return;
+  }
 
   debug( "Port status updated: dpid:%#" PRIx64 ", port:%u, %s, %s",
          status->dpid, status->port_no,
@@ -210,6 +216,10 @@ link_status_updated( void *user_data, const topology_link_status *status ) {
   assert( status != NULL );
 
   broadcast_helper *broadcast_helper = user_data;
+  if ( broadcast_helper->last_stage_down == false ) {
+    return;
+  }
+
   update_port_status_by_link( broadcast_helper->switches, status );
 }
 
@@ -228,9 +238,9 @@ init_last_stage( void *user_data, size_t n_entries, const topology_link_status *
   assert( user_data != NULL );
 
   broadcast_helper *broadcast_helper = user_data;
+  broadcast_helper->last_stage_down = true;
 
   update_link_status( broadcast_helper, n_entries, status );
-  add_callback_link_status_updated( link_status_updated, broadcast_helper );
 }
 
 
@@ -239,19 +249,18 @@ init_second_stage( void *user_data, size_t n_entries, const topology_port_status
   assert( user_data != NULL );
 
   broadcast_helper *broadcast_helper = user_data;
+  broadcast_helper->second_stage_down = true;
 
   // Initialize ports
   init_ports( &broadcast_helper->switches, n_entries, s );
 
   // Set asynchronous event handlers
 
-  // (1) Set port status update callback
-  add_callback_port_status_updated( port_status_updated, broadcast_helper );
-
-  // (2) Set packet-in handler
+  // (1) Set packet-in handler
   set_packet_in_handler( handle_packet_in, broadcast_helper );
 
-  // (3) Get all link status
+  // (2) Get all link status
+  add_callback_link_status_updated( link_status_updated, broadcast_helper );
   get_all_link_status( init_last_stage, broadcast_helper );
 }
 
@@ -262,6 +271,7 @@ after_subscribed( void *user_data ) {
 
   // Get all ports' status
   // init_last_stage() will be called
+  add_callback_port_status_updated( port_status_updated, user_data );
   get_all_port_status( init_second_stage, user_data );
 }
 
@@ -273,6 +283,8 @@ create_broadcast_helper( const char *topology_service ) {
   // Allocate broadcast_helper object
   broadcast_helper *broadcast_helper = xmalloc( sizeof( broadcast_helper ) );
   broadcast_helper->switches = NULL;
+  broadcast_helper->second_stage_down = false;
+  broadcast_helper->last_stage_down = false;
 
   // Initialize port database
   broadcast_helper->switches = create_ports( &broadcast_helper->switches );

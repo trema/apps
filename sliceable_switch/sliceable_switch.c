@@ -130,12 +130,6 @@ output_packet( const buffer *packet, uint64_t dpid, uint16_t port_no, uint16_t o
 
 
 static void
-output_packet_from_last_switch( const pathresolver_hop *last_hop, const buffer *packet, uint16_t out_vid ) {
-  output_packet( packet, last_hop->dpid, last_hop->out_port_no, out_vid );
-}
-
-
-static void
 handle_setup( int status, const path *p, void *user_data ) {
   UNUSED(p);
   assert(user_data);
@@ -188,16 +182,20 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
   // check if the packet is ARP or not
   if ( sliceable_switch->handle_arp_with_packetout && packet_type_arp( packet ) ) {
     // send packet out for tail switch
-    dlist_element *e = get_last_element( hops );
-    pathresolver_hop *last_hop = e->data;
-    output_packet_from_last_switch( last_hop, packet, out_vid );
     free_hop_list( hops );
+    output_packet( packet, out_datapath_id, out_port, out_vid );
     return;
   }
 
   const uint32_t wildcards = 0;
   struct ofp_match match;
   set_match_from_packet( &match, in_port, wildcards, packet );
+
+  if ( lookup_path( out_datapath_id, match, PRIORITY ) != NULL ) {
+    warn( "Duplicated path found." );
+    output_packet( packet, out_datapath_id, out_port, out_vid );
+    return;
+  }
 
   const uint16_t hard_timeout = 0;
   path *p = create_path( match, PRIORITY, sliceable_switch->idle_timeout, hard_timeout );
@@ -235,6 +233,9 @@ port_status_updated( void *user_data, const topology_port_status *status ) {
   assert( status != NULL );
 
   sliceable_switch *sliceable_switch = user_data;
+  if ( sliceable_switch->second_stage_down == false ) {
+    return;
+  }
 
   debug( "Port status updated: dpid:%#" PRIx64 ", port:%u(%s), %s, %s",
          status->dpid, status->port_no, status->name,
@@ -436,8 +437,6 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
 
 allow:
   {
-    teardown_path( datapath_id, match, PRIORITY );
-
     uint16_t out_port;
     uint64_t out_datapath_id;
 
@@ -462,6 +461,10 @@ allow:
 
       make_path( sliceable_switch, datapath_id, in_port, vid, out_datapath_id, out_port, out_vid, data );
     } else {
+      if ( lookup_path( datapath_id, match, PRIORITY ) != NULL ) {
+        teardown_path( datapath_id, match, PRIORITY );
+      }
+
       // Host's location is unknown, so flood packet
       flood_packet( datapath_id, in_port, slice, data, sliceable_switch->switches );
     }
@@ -527,6 +530,10 @@ link_status_updated( void *user_data, const topology_link_status *status ) {
   assert( status != NULL );
 
   sliceable_switch *sliceable_switch = user_data;
+  if ( sliceable_switch->last_stage_down == false ) {
+    return;
+  }
+
   update_topology( sliceable_switch->pathresolver, status );
   update_port_status_by_link( sliceable_switch->switches, status );
 }
@@ -547,9 +554,9 @@ init_last_stage( void *user_data, size_t n_entries, const topology_link_status *
   assert( user_data != NULL );
 
   sliceable_switch *sliceable_switch = user_data;
+  sliceable_switch->last_stage_down = true;
 
   update_link_status( sliceable_switch, n_entries, status );
-  add_callback_link_status_updated( link_status_updated, sliceable_switch );
 }
 
 
@@ -558,6 +565,7 @@ init_second_stage( void *user_data, size_t n_entries, const topology_port_status
   assert( user_data != NULL );
 
   sliceable_switch *sliceable_switch = user_data;
+  sliceable_switch->second_stage_down = true;
 
   // Initialize ports
   init_ports( &sliceable_switch->switches, n_entries, s );
@@ -567,13 +575,11 @@ init_second_stage( void *user_data, size_t n_entries, const topology_port_status
 
   // Set asynchronous event handlers
 
-  // (1) Set port status update callback
-  add_callback_port_status_updated( port_status_updated, sliceable_switch );
-
-  // (2) Set packet-in handler
+  // (1) Set packet-in handler
   set_packet_in_handler( handle_packet_in, sliceable_switch );
 
-  // (3) Get all link status
+  // (2) Get all link status
+  add_callback_link_status_updated( link_status_updated, sliceable_switch );
   get_all_link_status( init_last_stage, sliceable_switch );
 }
 
@@ -584,6 +590,7 @@ after_subscribed( void *user_data ) {
 
   // Get all ports' status
   // init_second_stage() will be called
+  add_callback_port_status_updated( port_status_updated, user_data );
   get_all_port_status( init_second_stage, user_data );
 }
 
@@ -600,6 +607,8 @@ create_sliceable_switch( const char *topology_service, const switch_options *opt
   instance->switches = NULL;
   instance->fdb = NULL;
   instance->pathresolver = NULL;
+  instance->second_stage_down = false;
+  instance->last_stage_down = false;
 
   info( "idle_timeout is set to %u [sec].", instance->idle_timeout );
   if ( instance->handle_arp_with_packetout ) {

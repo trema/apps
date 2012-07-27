@@ -33,6 +33,9 @@ typedef struct {
   list_element *switches;
   hash_table *fdb;
   pathresolver *pathresolver;
+
+  bool second_stage_down;
+  bool last_stage_down;
 } sliceable_switch;
 
 

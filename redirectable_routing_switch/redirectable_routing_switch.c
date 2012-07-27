@@ -58,6 +58,9 @@ typedef struct routing_switch {
   list_element *switches;
   hash_table *fdb;
   pathresolver *pathresolver;
+
+  bool second_stage_down;
+  bool last_stage_down;
 } routing_switch;
 
 
@@ -203,6 +206,9 @@ port_status_updated( void *user_data, const topology_port_status *status ) {
   assert( status != NULL );
 
   routing_switch *routing_switch = user_data;
+  if ( routing_switch->second_stage_down == false ) {
+    return;
+  }
 
   debug( "Port status updated: dpid:%#" PRIx64 ", port:%u, %s, %s",
          status->dpid, status->port_no,
@@ -411,6 +417,10 @@ link_status_updated( void *user_data, const topology_link_status *status ) {
   assert( status != NULL );
 
   routing_switch *routing_switch = user_data;
+  if ( routing_switch->last_stage_down == false ) {
+    return;
+  }
+
   update_topology( routing_switch->pathresolver, status );
   update_port_status_by_link( routing_switch->switches, status );
 }
@@ -431,9 +441,9 @@ init_last_stage( void *user_data, size_t n_entries, const topology_link_status *
   assert( user_data != NULL );
 
   routing_switch *routing_switch = user_data;
+  routing_switch->last_stage_down = true;
 
   update_link_status( routing_switch, n_entries, status );
-  add_callback_link_status_updated( link_status_updated, routing_switch );
 }
 
 
@@ -442,6 +452,7 @@ init_second_stage( void *user_data, size_t n_entries, const topology_port_status
   assert( user_data != NULL );
 
   routing_switch *routing_switch = user_data;
+  routing_switch->second_stage_down = true;
 
   // Initialize ports
   init_ports( &routing_switch->switches, n_entries, s );
@@ -451,13 +462,11 @@ init_second_stage( void *user_data, size_t n_entries, const topology_port_status
 
   // Set asynchronous event handlers
 
-  // (1) Set port status update callback
-  add_callback_port_status_updated( port_status_updated, routing_switch );
-
-  // (2) Set packet-in handler
+  // (1) Set packet-in handler
   set_packet_in_handler( handle_packet_in, routing_switch );
 
-  // (3) Get all link status
+  // (2) Get all link status
+  add_callback_link_status_updated( link_status_updated, routing_switch );
   get_all_link_status( init_last_stage, routing_switch );
 }
 
@@ -468,6 +477,7 @@ after_subscribed( void *user_data ) {
 
   // Get all ports' status
   // init_second_stage() will be called
+  add_callback_port_status_updated( port_status_updated, user_data );
   get_all_port_status( init_second_stage, user_data );
 }
 
@@ -482,6 +492,8 @@ create_routing_switch( const char *topology_service, const routing_switch_option
   routing_switch->idle_timeout = options->idle_timeout;
   routing_switch->switches = NULL;
   routing_switch->fdb = NULL;
+  routing_switch->second_stage_down = false;
+  routing_switch->last_stage_down = false;
 
   info( "idle_timeout is set to %u [sec].", routing_switch->idle_timeout );
 

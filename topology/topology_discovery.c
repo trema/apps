@@ -66,6 +66,9 @@ usage( void ) {
 
 static void
 update_port_status( const topology_port_status *s ) {
+  if ( s->port_no > OFPP_MAX ) {
+    return;
+  }
   probe_timer_entry *entry = delete_probe_timer_entry( &( s->dpid ), s->port_no );
   if ( s->status == TD_PORT_DOWN ) {
     if ( entry != NULL ) {

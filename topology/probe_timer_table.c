@@ -116,7 +116,7 @@ set_send_delay_state( probe_timer_entry *entry ) {
     entry->state = PROBE_TIMER_STATE_SEND_DELAY;
     entry->retry_count = 1;
   }
-  set_random_expires( 0, 2000, entry );
+  set_random_expires( 500, 2000, entry );
 }
 
 
