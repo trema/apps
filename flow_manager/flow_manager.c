@@ -166,8 +166,8 @@ normalize_match( struct ofp_match *match ) {
     match->tp_dst = 0;
   }
   else {
-    if ( match->nw_proto != IPPROTO_TCP && match->nw_proto != IPPROTO_UDP &&
-         match->nw_proto != IPPROTO_ICMP ) {
+    if ( match->nw_proto != IPPROTO_TCP && match->nw_proto != IPPROTO_UDP && match->nw_proto != IPPROTO_ICMP &&
+         match->dl_type != ETH_ETHTYPE_ARP ) {
       match->wildcards |= ( uint32_t ) OFPFW_NW_TOS;
       match->wildcards |= ( uint32_t ) OFPFW_NW_SRC_MASK;
       match->wildcards |= ( uint32_t ) OFPFW_NW_DST_MASK;
