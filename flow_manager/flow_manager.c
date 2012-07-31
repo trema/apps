@@ -103,7 +103,7 @@ normalize_match( struct ofp_match *match ) {
   }
   if ( match->wildcards & OFPFW_DL_VLAN ) {
     match->dl_vlan = 0;
-    match->wildcards &= ( uint32_t ) ~OFPFW_DL_VLAN_PCP;
+    match->wildcards |= ( uint32_t ) OFPFW_DL_VLAN_PCP;
     match->dl_vlan_pcp = 0;
   }
   if ( match->wildcards & OFPFW_DL_SRC ) {
@@ -114,12 +114,12 @@ normalize_match( struct ofp_match *match ) {
   }
   if ( match->wildcards & OFPFW_DL_TYPE ) {
     match->dl_type = 0;
-    match->wildcards &= ( uint32_t ) ~OFPFW_NW_TOS;
-    match->wildcards &= ( uint32_t ) ~OFPFW_NW_PROTO;
-    match->wildcards &= ( uint32_t ) ~OFPFW_NW_SRC_MASK;
-    match->wildcards &= ( uint32_t ) ~OFPFW_NW_DST_MASK;
-    match->wildcards &= ( uint32_t ) ~OFPFW_TP_SRC;
-    match->wildcards &= ( uint32_t ) ~OFPFW_TP_DST;
+    match->wildcards |= ( uint32_t ) OFPFW_NW_TOS;
+    match->wildcards |= ( uint32_t ) OFPFW_NW_PROTO;
+    match->wildcards |= ( uint32_t ) OFPFW_NW_SRC_MASK;
+    match->wildcards |= ( uint32_t ) OFPFW_NW_DST_MASK;
+    match->wildcards |= ( uint32_t ) OFPFW_TP_SRC;
+    match->wildcards |= ( uint32_t ) OFPFW_TP_DST;
     match->nw_tos = 0;
     match->nw_proto = 0;
     match->nw_src = 0;
@@ -129,12 +129,12 @@ normalize_match( struct ofp_match *match ) {
   }
   else {
     if ( match->dl_type != ETH_ETHTYPE_IPV4 && match->dl_type != ETH_ETHTYPE_ARP ) {
-      match->wildcards &= ( uint32_t ) ~OFPFW_NW_TOS;
-      match->wildcards &= ( uint32_t ) ~OFPFW_NW_PROTO;
-      match->wildcards &= ( uint32_t ) ~OFPFW_NW_SRC_MASK;
-      match->wildcards &= ( uint32_t ) ~OFPFW_NW_DST_MASK;
-      match->wildcards &= ( uint32_t ) ~OFPFW_TP_SRC;
-      match->wildcards &= ( uint32_t ) ~OFPFW_TP_DST;
+      match->wildcards |= ( uint32_t ) OFPFW_NW_TOS;
+      match->wildcards |= ( uint32_t ) OFPFW_NW_PROTO;
+      match->wildcards |= ( uint32_t ) OFPFW_NW_SRC_MASK;
+      match->wildcards |= ( uint32_t ) OFPFW_NW_DST_MASK;
+      match->wildcards |= ( uint32_t ) OFPFW_TP_SRC;
+      match->wildcards |= ( uint32_t ) OFPFW_TP_DST;
       match->nw_tos = 0;
       match->nw_proto = 0;
       match->nw_src = 0;
@@ -143,21 +143,21 @@ normalize_match( struct ofp_match *match ) {
       match->tp_dst = 0;
     }
     if ( match->dl_type == ETH_ETHTYPE_ARP ) {
-      match->wildcards &= ( uint32_t ) ~OFPFW_NW_TOS;
-      match->wildcards &= ( uint32_t ) ~OFPFW_TP_SRC;
-      match->wildcards &= ( uint32_t ) ~OFPFW_TP_DST;
+      match->wildcards |= ( uint32_t ) OFPFW_NW_TOS;
+      match->wildcards |= ( uint32_t ) OFPFW_TP_SRC;
+      match->wildcards |= ( uint32_t ) OFPFW_TP_DST;
       match->nw_tos = 0;
       match->tp_src = 0;
       match->tp_dst = 0;
     }
   }
   if ( match->wildcards & OFPFW_NW_PROTO ) {
-    match->wildcards &= ( uint32_t ) ~OFPFW_NW_TOS;
-    match->wildcards &= ( uint32_t ) ~OFPFW_NW_PROTO;
-    match->wildcards &= ( uint32_t ) ~OFPFW_NW_SRC_MASK;
-    match->wildcards &= ( uint32_t ) ~OFPFW_NW_DST_MASK;
-    match->wildcards &= ( uint32_t ) ~OFPFW_TP_SRC;
-    match->wildcards &= ( uint32_t ) ~OFPFW_TP_DST;
+    match->wildcards |= ( uint32_t ) OFPFW_NW_TOS;
+    match->wildcards |= ( uint32_t ) OFPFW_NW_PROTO;
+    match->wildcards |= ( uint32_t ) OFPFW_NW_SRC_MASK;
+    match->wildcards |= ( uint32_t ) OFPFW_NW_DST_MASK;
+    match->wildcards |= ( uint32_t ) OFPFW_TP_SRC;
+    match->wildcards |= ( uint32_t ) OFPFW_TP_DST;
     match->nw_tos = 0;
     match->nw_proto = 0;
     match->nw_src = 0;
@@ -168,11 +168,11 @@ normalize_match( struct ofp_match *match ) {
   else {
     if ( match->nw_proto != IPPROTO_TCP && match->nw_proto != IPPROTO_UDP &&
          match->nw_proto != IPPROTO_ICMP ) {
-      match->wildcards &= ( uint32_t ) ~OFPFW_NW_TOS;
-      match->wildcards &= ( uint32_t ) ~OFPFW_NW_SRC_MASK;
-      match->wildcards &= ( uint32_t ) ~OFPFW_NW_DST_MASK;
-      match->wildcards &= ( uint32_t ) ~OFPFW_TP_SRC;
-      match->wildcards &= ( uint32_t ) ~OFPFW_TP_DST;
+      match->wildcards |= ( uint32_t ) OFPFW_NW_TOS;
+      match->wildcards |= ( uint32_t ) OFPFW_NW_SRC_MASK;
+      match->wildcards |= ( uint32_t ) OFPFW_NW_DST_MASK;
+      match->wildcards |= ( uint32_t ) OFPFW_TP_SRC;
+      match->wildcards |= ( uint32_t ) OFPFW_TP_DST;
       match->nw_tos = 0;
       match->nw_src = 0;
       match->nw_dst = 0;
