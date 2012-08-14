@@ -89,7 +89,7 @@ static const struct timespec TRANSACTION_TIMEOUT = { 5, 0 };
 
 static void
 normalize_match( struct ofp_match *match ) {
-  char match_string[ 256 ];
+  char match_string[ 1024 ];
   match_to_string( match, match_string, sizeof( match_string ) );
   debug( "Normalizing match structure ( original match = [%s] ).", match_string );
 
@@ -114,7 +114,7 @@ normalize_match( struct ofp_match *match ) {
     memset( match->dl_src, 0, sizeof( match->dl_src ) );
   }
   if ( match->wildcards & OFPFW_DL_DST ) {
-    memset( match->dl_src, 0, sizeof( match->dl_dst ) );
+    memset( match->dl_dst, 0, sizeof( match->dl_dst ) );
   }
   if ( match->wildcards & OFPFW_DL_TYPE ) {
     match->dl_type = 0;
