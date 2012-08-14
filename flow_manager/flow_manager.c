@@ -87,6 +87,8 @@ typedef struct {
 static const struct timespec TRANSACTION_TIMEOUT = { 5, 0 };
 
 
+#define HAVE_NORMALIZE_MATCH 1
+#ifndef HAVE_NORMALIZE_MATCH
 static void
 normalize_match( struct ofp_match *match ) {
   char match_string[ 1024 ];
@@ -199,6 +201,7 @@ normalize_match( struct ofp_match *match ) {
   match_to_string( match, match_string, sizeof( match_string ) );
   debug( "Normalization completed ( updated match = [%s] ).", match_string );
 }
+#endif // HAVE_NORMALIZE_MATCH
 
 
 static messenger_context_handle *
