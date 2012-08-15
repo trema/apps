@@ -1158,13 +1158,13 @@ handle_barrier_reply( uint64_t datapath_id, uint32_t transaction_id, void *user_
 
   flow_entry_private *entry = lookup_flow_entry_by_barrier_xid( transaction_id );
   if ( entry == NULL ) {
-    error( "No flow entry found ( transaction_id = %#x ).", transaction_id );
+    error( "No flow entry found ( barrier_reply, transaction_id = %#x, datapath_id = %#" PRIx64 " ).", transaction_id, datapath_id );
     return;
   }
 
   flow_entry_group *group = lookup_flow_entry_group( entry->group_id );
   if ( group == NULL ) {
-    error( "No flow entry group found ( id = %#" PRIx64 " ).", entry->group_id );
+    error( "No flow entry group found ( barrier_reply, id = %#" PRIx64 ", datapath_id = %#" PRIx64 " ).", entry->group_id, datapath_id );
     return;
   }
 
@@ -1272,7 +1272,7 @@ handle_error( uint64_t datapath_id, uint32_t transaction_id, uint16_t type, uint
 
   flow_entry_group *group = lookup_flow_entry_group( entry->group_id );
   if ( group == NULL ) {
-    error( "No flow entry group found ( id = %#" PRIx64 " ).", entry->group_id );
+    error( "No flow entry group found ( error, id = %#" PRIx64 ", datapath_id = %#" PRIx64 " ).", entry->group_id, datapath_id );
     return;
   }
 
@@ -1342,13 +1342,13 @@ handle_flow_removed( uint64_t datapath_id, uint32_t transaction_id, struct ofp_m
 
   flow_entry_group *group = lookup_flow_entry_group( cookie );
   if ( group == NULL ) {
-    error( "No flow entry group found ( id = %#" PRIx64 " ).", cookie );
+    error( "No flow entry group found ( flow_removed, id = %#" PRIx64 ", datapath_id = %#" PRIx64 " ).", cookie, datapath_id );
     return;
   }
 
   flow_entry_private *entry = lookup_flow_entry( datapath_id, match, priority );
   if ( entry == NULL ) {
-    error( "No flow entry found." );
+    error( "No flow entry found ( flow_removed, transaction_id = %#x, datapath_id = %#" PRIx64 " ).", transaction_id, datapath_id );
     return;
   }
 

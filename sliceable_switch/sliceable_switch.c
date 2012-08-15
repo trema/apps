@@ -135,9 +135,11 @@ handle_setup( int status, const path *p, void *user_data ) {
   assert(user_data);
 
   packet_out_params *params = user_data;
-  if ( status == SETUP_SUCCEEDED ) {
-    output_packet( params->packet, params->out_datapath_id, params->out_port_no, params->out_vid );
+  if ( status != SETUP_SUCCEEDED ) {
+    error( "Failed to set up path ( status = %d ).", status );
   }
+  output_packet( params->packet, params->out_datapath_id, params->out_port_no, params->out_vid );
+  free_buffer( params->packet );
   xfree( params );
 }
 
@@ -191,7 +193,7 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
   struct ofp_match match;
   set_match_from_packet( &match, in_port, wildcards, packet );
 
-  if ( lookup_path( out_datapath_id, match, PRIORITY ) != NULL ) {
+  if ( lookup_path( in_datapath_id, match, PRIORITY ) != NULL ) {
     warn( "Duplicated path found." );
     output_packet( packet, out_datapath_id, out_port, out_vid );
     return;
@@ -218,6 +220,9 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
   bool ret = setup_path( p, handle_setup, params, NULL, NULL );
   if ( ret != true ) {
     error( "Failed to set up path." );
+    output_packet( packet, out_datapath_id, out_port, out_vid );
+    free_buffer( params->packet );
+    xfree( params );
   }
 
   delete_path( p );
