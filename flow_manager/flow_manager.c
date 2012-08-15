@@ -84,7 +84,9 @@ typedef struct {
 } flow_entry_group;
 
 
-static const struct timespec TRANSACTION_TIMEOUT = { 5, 0 };
+static const struct timespec SETUP_TRANSACTION_TIMEOUT = { 5, 0 };
+static const struct timespec TEARDOWN_TRANSACTION_TIMEOUT = { 5, 0 };
+static const struct timespec FLOW_REMOVED_TRANSACTION_TIMEOUT = { 5, 0 };
 
 
 #define HAVE_NORMALIZE_MATCH 1
@@ -1021,7 +1023,7 @@ handle_setup_request( const messenger_context_handle *handle,
     return;
   }
   clock_gettime( CLOCK_MONOTONIC, &group->expires_at );
-  ADD_TIMESPEC( &group->expires_at, &TRANSACTION_TIMEOUT, &group->expires_at );
+  ADD_TIMESPEC( &group->expires_at, &SETUP_TRANSACTION_TIMEOUT, &group->expires_at );
 
   group->context_handle = copy_messenger_context_handle( handle );
   add_flow_entry_group( group );
@@ -1062,7 +1064,7 @@ handle_teardown_request( const messenger_context_handle *handle,
     return;
   }
   clock_gettime( CLOCK_MONOTONIC, &group->expires_at );
-  ADD_TIMESPEC( &group->expires_at, &TRANSACTION_TIMEOUT, &group->expires_at );
+  ADD_TIMESPEC( &group->expires_at, &TEARDOWN_TRANSACTION_TIMEOUT, &group->expires_at );
 
   group->context_handle = copy_messenger_context_handle( handle );
 }
@@ -1106,6 +1108,12 @@ age_transaction_entries( void *user_data ) {
         free_buffer( reply );
         free_messenger_context_handle( group->context_handle );
         group->context_handle = NULL;
+      }
+      else {
+        buffer *notification = create_flow_entry_group_teardown( group->id, TIMEOUT );
+        send_message( group->owner, MESSENGER_FLOW_ENTRY_GROUP_TEARDOWN,
+                      notification->data, notification->length );
+        free_buffer( notification );
       }
     }
     delete_flow_entry_group( group->id );
@@ -1355,6 +1363,8 @@ handle_flow_removed( uint64_t datapath_id, uint32_t transaction_id, struct ofp_m
   update_flow_entry_state( entry, REMOVE_CONFIRMED );
   if ( group->state != REMOVE_IN_PROGRESS ) {
     update_flow_entry_group_state( group, REMOVE_IN_PROGRESS );
+    clock_gettime( CLOCK_MONOTONIC, &group->expires_at );
+    ADD_TIMESPEC( &group->expires_at, &FLOW_REMOVED_TRANSACTION_TIMEOUT, &group->expires_at );
   }
 
   group->n_active_entries--;

@@ -533,6 +533,9 @@ handle_reply( uint16_t tag, void *data, size_t length, void *user_data ) {
         return;
       }
       flow_entry_group_setup_reply *reply = data;
+      if ( reply->status != SUCCEEDED ) {
+        error( "Failed to setup reply ( id = %#" PRIx64 ", status = %#x ).", reply->id, reply->status );
+      }
       setup_completed( reply->id, reply->status, user_data );
     }
     break;
