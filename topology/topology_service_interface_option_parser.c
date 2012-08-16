@@ -39,22 +39,25 @@ static char short_options[] = "t:";
 void
 topology_service_interface_usage( const char *progname, const char *description, const char *additional_options ) {
   printf(
-         "%s\n"
-	 "Usage: %s [OPTION]...\n"
-	 "\n"
-	 , description, progname );
+    "%s\n"
+    "Usage: %s [OPTION]...\n"
+    "\n"
+    , description, progname
+  );
 
   if ( additional_options != NULL ) {
     printf( "%s", additional_options );
   }
 
   printf(
-	 "  -n, --name=SERVICE_NAME     service name\n"
-	 "  -t, --topology=SERVICE_NAME topology service name\n"
-	 "  -d, --daemonize             run in the background\n"
-	 "  -l, --logging_level=LEVEL   set logging level\n"
-	 "  -h, --help                  display this help and exit\n"
-    );
+    "  -n, --name=SERVICE_NAME         service name\n"
+    "  -t, --topology=SERVICE_NAME     topology service name\n"
+    "  -d, --daemonize                 run in the background\n"
+    "  -l, --logging_level=LEVEL       set logging level\n"
+    "  -g, --syslog                    output log messages to syslog\n"
+    "  -f, --logging_facility=FACILITY set syslog facility\n"
+    "  -h, --help                      display this help and exit\n"
+  );
 }
 
 

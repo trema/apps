@@ -508,8 +508,8 @@ delete_routing_switch( routing_switch *routing_switch ) {
 
 
 static char option_description[] =
-  "  -i, --idle_timeout=TIMEOUT       Idle timeout value of flow entry\n"
-  "  -A, --handle_arp_with_packetout  Handle ARP with packetout\n";
+  "  -i, --idle_timeout=TIMEOUT      idle timeout value of flow entry\n"
+  "  -A, --handle_arp_with_packetout handle ARP with packetout\n";
 
 static char short_options[] = "i:A";
 static struct option long_options[] = {

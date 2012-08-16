@@ -33,24 +33,26 @@
 void
 usage() {
   printf(
-	 "OpenFlow Packet in dispatcher.\n"
-	 "Usage: %s [OPTION]... [PACKETIN-DISPATCH-RULE]...\n"
-	 "\n"
-	 "  -n, --name=SERVICE_NAME     service name\n"
-	 "  -d, --daemonize             run in the background\n"
-	 "  -l, --logging_level=LEVEL   set logging level\n"
-	 "  -h, --help                  display this help and exit\n"
-	 "\n"
-	 "PACKETIN-DISPATCH-RULE:\n"
-	 "  dispatch-type::destination-service-name\n"
-	 "\n"
-	 "dispatch-type:\n"
-	 "  arp_or_unicast              arp or unicast packets\n"
-	 "  broadcast                   broadcast (arp not include)\n"
-	 "\n"
-	 "destination-service-name      destination service name\n"
-	 , get_executable_name()
-	 );
+    "OpenFlow Packet in dispatcher.\n"
+    "Usage: %s [OPTION]... [PACKETIN-DISPATCH-RULE]...\n"
+    "\n"
+    "  -n, --name=SERVICE_NAME         service name\n"
+    "  -d, --daemonize                 run in the background\n"
+    "  -l, --logging_level=LEVEL       set logging level\n"
+    "  -g, --syslog                    output log messages to syslog\n"
+    "  -f, --logging_facility=FACILITY set syslog facility\n"
+    "  -h, --help                      display this help and exit\n"
+    "\n"
+    "PACKETIN-DISPATCH-RULE:\n"
+    "  dispatch-type::destination-service-name\n"
+    "\n"
+    "dispatch-type:\n"
+    "  arp_or_unicast                  arp or unicast packets\n"
+    "  broadcast                       broadcast (arp not include)\n"
+    "\n"
+    "destination-service-name          destination service name\n"
+    , get_executable_name()
+  );
 }
 
 

@@ -38,9 +38,9 @@ typedef struct show_topology_options {
 
 
 static char option_description[] =
-  "  -D, --dsl                   print dsl format\n"
-  "  -G, --graph-easy            print graph-easy format\n"
-  "  -C, --csv                   print csv format\n";
+  "  -D, --dsl                       print dsl format\n"
+  "  -G, --graph-easy                print graph-easy format\n"
+  "  -C, --csv                       print csv format\n";
 static char short_options[] = "DGC";
 static struct option long_options[] = {
   { "dsl", 0, NULL, 'D' },

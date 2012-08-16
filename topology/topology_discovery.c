@@ -36,10 +36,10 @@ static bool response_all_port_status_down = false;
 
 
 static char option_description[] =
-                                   "  -m, --lldp_mac_dst=MAC_ADDR     Destination Mac address for sending LLDP\n"
-                                   "  -i, --lldp_over_ip          Send LLDP messages over IP\n"
-                                   "  -o, --lldp_ip_src=IP_ADDR   Source IP address for sending LLDP over IP\n"
-                                   "  -r, --lldp_ip_dst=IP_ADDR   Destination IP address for sending LLDP over IP\n";
+                                   "  -m, --lldp_mac_dst=MAC_ADDR     destination Mac address for sending LLDP\n"
+                                   "  -i, --lldp_over_ip              send LLDP messages over IP\n"
+                                   "  -o, --lldp_ip_src=IP_ADDR       source IP address for sending LLDP over IP\n"
+                                   "  -r, --lldp_ip_dst=IP_ADDR       destination IP address for sending LLDP over IP\n";
 static char short_options[] = "m:io:r:";
 static struct option long_options[] = {
   { "lldp_mac_dst", required_argument, NULL, 'm' },

@@ -467,7 +467,7 @@ delete_routing_switch( routing_switch *routing_switch ) {
 }
 
 
-static char option_description[] = "  -i, --idle_timeout=TIMEOUT  Idle timeout value of flow entry\n";
+static char option_description[] = "  -i, --idle_timeout=TIMEOUT      idle timeout value of flow entry\n";
 static char short_options[] = "i:";
 static struct option long_options[] = {
   { "idle_timeout", 1, NULL, 'i' },

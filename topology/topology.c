@@ -48,18 +48,20 @@ typedef struct {
 void
 usage() {
   printf(
-     "topology manager\n"
-     "Usage: %s [OPTION]...\n"
-     "\n"
-     "  -i, --lldp_over_ip          Send LLDP messages over IP\n"
-     "  -o, --lldp_ip_src=IP_ADDR   Source IP address for sending LLDP over IP\n"
-     "  -r, --lldp_ip_dst=IP_ADDR   Destination IP address for sending LLDP over IP\n"
-     "  -n, --name=SERVICE_NAME     service name\n"
-     "  -d, --daemonize             run in the background\n"
-     "  -l, --logging_level=LEVEL   set logging level\n"
-     "  -h, --help                  display this help and exit\n"
-     , get_executable_name()
-    );
+    "topology manager\n"
+    "Usage: %s [OPTION]...\n"
+    "\n"
+    "  -i, --lldp_over_ip              send LLDP messages over IP\n"
+    "  -o, --lldp_ip_src=IP_ADDR       source IP address for sending LLDP over IP\n"
+    "  -r, --lldp_ip_dst=IP_ADDR       destination IP address for sending LLDP over IP\n"
+    "  -n, --name=SERVICE_NAME         service name\n"
+    "  -d, --daemonize                 run in the background\n"
+    "  -l, --logging_level=LEVEL       set logging level\n"
+    "  -g, --syslog                    output log messages to syslog\n"
+    "  -f, --logging_facility=FACILITY set syslog facility\n"
+    "  -h, --help                      display this help and exit\n"
+    , get_executable_name()
+  );
 }
 
 
