@@ -679,18 +679,18 @@ delete_sliceable_switch( sliceable_switch *sliceable_switch ) {
 }
 
 
-static char option_description[] = "  -i, --idle_timeout=TIMEOUT  idle timeout value of flow entry\n"
-                                   "  -A, --handle_arp_with_packetout  Handle ARP with packetout\n"
-                                   "  -s, --slice_db=DB_FILE      slice database\n"
-                                   "  -f, --filter_db=DB_FILE     filter database\n"
-                                   "  -m, --loose                 enable loose mac-based slicing\n"
-                                   "  -r, --restrict_hosts        restrict hosts on switch port\n";
-static char short_options[] = "i:As:f:mr";
+static char option_description[] = "  -i, --idle_timeout=TIMEOUT      idle timeout value of flow entry\n"
+                                   "  -A, --handle_arp_with_packetout handle ARP with packetout\n"
+                                   "  -s, --slice_db=DB_FILE          slice database\n"
+                                   "  -a, --filter_db=DB_FILE         filter database\n"
+                                   "  -m, --loose                     enable loose mac-based slicing\n"
+                                   "  -r, --restrict_hosts            restrict hosts on switch port\n";
+static char short_options[] = "i:As:a:mr";
 static struct option long_options[] = {
   { "idle_timeout", required_argument, NULL, 'i' },
   { "handle_arp_with_packetout", 0, NULL, 'A' },
   { "slice_db", required_argument, NULL, 's' },
-  { "filter_db", required_argument, NULL, 'f' },
+  { "filter_db", required_argument, NULL, 'a' },
   { "loose", no_argument, NULL, 'm' },
   { "restrict_hosts", no_argument, NULL, 'r' },
   { NULL, 0, NULL, 0  },
@@ -756,7 +756,7 @@ init_switch_options( switch_options *options, int *argc, char **argv[] ) {
         }
         break;
 
-      case 'f':
+      case 'a':
         if ( optarg != NULL ) {
           if ( realpath( optarg, options->filter_db_file ) == NULL ) {
             memset( options->filter_db_file, '\0', sizeof( options->filter_db_file ) );

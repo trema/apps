@@ -23,7 +23,7 @@ Feature: control multiple openflow switchies using sliceable_switch
     And the following filter records
       | filter_id | rule_specification      |
       | default   | priority=0 action=ALLOW |
-    When I try trema run "../apps/sliceable_switch/sliceable_switch -s tmp/slice.db -f tmp/filter.db --restrict_hosts" with following configuration (backgrounded):
+    When I try trema run "../apps/sliceable_switch/sliceable_switch -s tmp/slice.db -a tmp/filter.db --restrict_hosts" with following configuration (backgrounded):
       """
       vswitch("sliceable_switch1") { datapath_id "0x1" }
 
@@ -138,7 +138,7 @@ Feature: control multiple openflow switchies using sliceable_switch
     And the following filter records
       | filter_id | rule_specification      |
       | default   | priority=0 action=ALLOW |
-    When I try trema run "../apps/sliceable_switch/sliceable_switch -s tmp/slice.db -f tmp/filter.db --restrict_hosts" with following configuration (backgrounded):
+    When I try trema run "../apps/sliceable_switch/sliceable_switch -s tmp/slice.db -a tmp/filter.db --restrict_hosts" with following configuration (backgrounded):
       """
       vswitch("sliceable_switch2") { datapath_id "0x1" }
 
@@ -197,7 +197,7 @@ Feature: control multiple openflow switchies using sliceable_switch
     And the following filter records
       | filter_id | rule_specification      |
       | default   | priority=0 action=ALLOW |
-    When I try trema run "../apps/sliceable_switch/sliceable_switch -s tmp/slice.db -f tmp/filter.db --restrict_hosts" with following configuration (backgrounded):
+    When I try trema run "../apps/sliceable_switch/sliceable_switch -s tmp/slice.db -a tmp/filter.db --restrict_hosts" with following configuration (backgrounded):
       """
       vswitch("sliceable_switch1") { datapath_id "0x1" }
       vswitch("sliceable_switch2") { datapath_id "0x2" }

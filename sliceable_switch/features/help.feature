@@ -12,17 +12,19 @@ Feature: sliceable_switch help
       Sliceable switch.
       Usage: sliceable_switch [OPTION]...
       
-        -i, --idle_timeout=TIMEOUT  idle timeout value of flow entry
-        -A, --handle_arp_with_packetout  Handle ARP with packetout
-        -s, --slice_db=DB_FILE      slice database
-        -f, --filter_db=DB_FILE     filter database
-        -m, --loose                 enable loose mac-based slicing
-        -r, --restrict_hosts        restrict hosts on switch port
-        -n, --name=SERVICE_NAME     service name
-        -t, --topology=SERVICE_NAME topology service name
-        -d, --daemonize             run in the background
-        -l, --logging_level=LEVEL   set logging level
-        -h, --help                  display this help and exit
+        -i, --idle_timeout=TIMEOUT      idle timeout value of flow entry
+        -A, --handle_arp_with_packetout handle ARP with packetout
+        -s, --slice_db=DB_FILE          slice database
+        -a, --filter_db=DB_FILE         filter database
+        -m, --loose                     enable loose mac-based slicing
+        -r, --restrict_hosts            restrict hosts on switch port
+        -n, --name=SERVICE_NAME         service name
+        -t, --topology=SERVICE_NAME     topology service name
+        -d, --daemonize                 run in the background
+        -l, --logging_level=LEVEL       set logging level
+        -g, --syslog                    output log messages to syslog
+        -f, --logging_facility=FACILITY set syslog facility
+        -h, --help                      display this help and exit
       """
 
   Scenario: sliceable_switch -h
@@ -32,15 +34,17 @@ Feature: sliceable_switch help
       Sliceable switch.
       Usage: sliceable_switch [OPTION]...
       
-        -i, --idle_timeout=TIMEOUT  idle timeout value of flow entry
-        -A, --handle_arp_with_packetout  Handle ARP with packetout
-        -s, --slice_db=DB_FILE      slice database
-        -f, --filter_db=DB_FILE     filter database
-        -m, --loose                 enable loose mac-based slicing
-        -r, --restrict_hosts        restrict hosts on switch port
-        -n, --name=SERVICE_NAME     service name
-        -t, --topology=SERVICE_NAME topology service name
-        -d, --daemonize             run in the background
-        -l, --logging_level=LEVEL   set logging level
-        -h, --help                  display this help and exit
+        -i, --idle_timeout=TIMEOUT      idle timeout value of flow entry
+        -A, --handle_arp_with_packetout handle ARP with packetout
+        -s, --slice_db=DB_FILE          slice database
+        -a, --filter_db=DB_FILE         filter database
+        -m, --loose                     enable loose mac-based slicing
+        -r, --restrict_hosts            restrict hosts on switch port
+        -n, --name=SERVICE_NAME         service name
+        -t, --topology=SERVICE_NAME     topology service name
+        -d, --daemonize                 run in the background
+        -l, --logging_level=LEVEL       set logging level
+        -g, --syslog                    output log messages to syslog
+        -f, --logging_facility=FACILITY set syslog facility
+        -h, --help                      display this help and exit
       """
