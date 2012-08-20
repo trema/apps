@@ -202,7 +202,7 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
     free_buffer( flow_mod );
     delete_actions( actions );
 
-    struct ofp_match match2 = match; 
+    struct ofp_match match2 = match;
     match2.in_port = output_port;
     memcpy( match2.dl_src, match.dl_dst, ETH_ADDRLEN );
     memcpy( match2.dl_dst, match.dl_src, ETH_ADDRLEN );

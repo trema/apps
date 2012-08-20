@@ -239,7 +239,7 @@ build_hop_list( node *src_node, uint16_t src_port_no,
     free_hop_list( h );
     return NULL;
   }
-  
+
   hh->in_port_no = src_port_no;
 
   // trim last element

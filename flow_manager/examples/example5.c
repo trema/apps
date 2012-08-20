@@ -81,7 +81,7 @@ setup( void *user_data ) {
   uint16_t priority = UINT16_MAX / 2;
   uint16_t idle_timeout = 10;
   uint16_t hard_timeout = 0;
- 
+
   info( "**** Setting up a path *** " );
 
   struct ofp_match match;

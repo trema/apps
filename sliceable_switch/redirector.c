@@ -111,7 +111,7 @@ update_host_route( const int operation, const uint32_t ip ) {
   }
 
   nfd = socket( AF_INET, SOCK_DGRAM, 0 );
-  
+
   if( ioctl( nfd, ( long unsigned int ) operation, ( void * ) &rt ) < 0 ) {
     error( "Cannot add/delete a routing table entry (%s).", strerror( errno ) );
     close( nfd );
@@ -270,7 +270,7 @@ init_tun( const char *name ) {
   }
 
   nfd = socket( AF_INET, SOCK_DGRAM, 0 );
-  
+
   ifr.ifr_qlen = TUN_DEV_TXQ_LEN;
   if ( ioctl( nfd, SIOCSIFTXQLEN, ( void * ) &ifr ) < 0 ) {
     error( "Cannot set txqueuelen to %d.", ifr.ifr_qlen );
@@ -393,7 +393,7 @@ send_packet_to_tun( const void *data, size_t length ) {
     error( "Failed to send a packet to a tun interface (fd = %d).", fd );
     return;
   }
-  
+
   if ( ret != ( ssize_t ) length ) {
     warn( "Only a part of packet is sent (pkt_len = %d, sent_len = %u).", length, ret );
   }

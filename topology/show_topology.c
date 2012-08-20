@@ -87,7 +87,7 @@ init_show_topology_options( show_topology_options *options, int *argc, char **ar
     case 'D':
       options->output_format = dsl;
       break;
-      
+
     case 'G':
       options->output_format = graph_easy;
       break;
@@ -162,7 +162,7 @@ main( int argc, char *argv[] ) {
     break;
   }
   add_periodic_event_callback( 10, timed_out, NULL );
-  
+
   start_trema();
 
   finalize_libtopology();

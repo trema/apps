@@ -87,7 +87,7 @@ insert_path_db_entry( path_manager_path *path ) {
   if ( entry != NULL ) {
     char match_string[ 256 ];
     match_to_string( &path->match, match_string, sizeof( match_string ) );
-    warn( "Path entry is already registered ( match = [%s] ). Replacing it.", match_string ); 
+    warn( "Path entry is already registered ( match = [%s] ). Replacing it.", match_string );
     delete_path_db_entry( path->match );
   }
   insert_hash_entry( path_db, path, path );

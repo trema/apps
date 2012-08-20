@@ -61,7 +61,7 @@ $(TARGET_SHOW): $(OBJS_SHOW)
 .c.o:
 	$(CC) $(CFLAGS) -c $<
 
-depend: 
+depend:
 	$(CC) -MM $(CFLAGS) $(SRCS) > $(DEPENDS)
 
 clean:

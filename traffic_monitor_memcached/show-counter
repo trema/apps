@@ -81,7 +81,7 @@ class Dumper < MemCache
           value = get(key)
           value = "(nil)" if value.nil?
           split_key = key.split( "-", 2 )
-	  if split_key[ 0 ] == prefix 
+	  if split_key[ 0 ] == prefix
             print "#{ split_key[ 1 ] },#{ value }\n"
 	  end
         end

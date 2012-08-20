@@ -54,7 +54,7 @@ class ShowSwitchFeatures < Controller
     send_message datapath_id, DescStatsRequest.new
   end
 
-  
+
   def stats_reply datapath_id, message
     desc = message.stats.find do | each |
       each.is_a?( DescStatsReply )

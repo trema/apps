@@ -125,14 +125,14 @@ get_topology_service_interface_name( void ) {
 }
 
 
-void 
+void
 init_topology_service_interface_options( int *argc, char **argv[] ) {
   options.name = xstrdup( "topology" );
-  option_parser( argc, argv );  
+  option_parser( argc, argv );
 }
 
 
-void 
+void
 finalize_topology_service_interface_options( void ) {
   xfree( options.name );
 }

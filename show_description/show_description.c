@@ -172,7 +172,7 @@ main( int argc, char *argv[] ) {
 
   send_list_switches_request( &show_desc );
 
-  
+
   start_trema();
 
   return 0;

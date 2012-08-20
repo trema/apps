@@ -92,7 +92,7 @@ print_with_graph_easy_format( void *param, size_t entries, const topology_link_s
     r.from_portno = s[ i ].to_portno;
     r.to_dpid = s[ i ].from_dpid;
     r.to_portno = s[ i ].from_portno;
-    
+
     topology_link_status *e = lookup_hash_entry( link_hash, &r );
     if ( e != NULL ) {
       delete_hash_entry( link_hash, e );

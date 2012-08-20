@@ -522,7 +522,7 @@ delete_dynamic_port_slice_bindings( uint64_t datapath_id, uint16_t port ) {
 
 static void
 delete_all_flows(){
-  struct ofp_match match;  
+  struct ofp_match match;
   memset( &match, 0, sizeof( struct ofp_match ) );
   match.wildcards = OFPFW_ALL;
 

@@ -38,7 +38,7 @@ class SimpleMulticast < Controller
       handle_igmp message
     else
       members = @mfc.members( message.ipv4_daddr )
-      flow_mod datapath_id, members, message 
+      flow_mod datapath_id, members, message
       packet_out datapath_id, members, message
     end
   end

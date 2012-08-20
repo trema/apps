@@ -81,7 +81,7 @@ modify_flow_entry( const pathresolver_hop *h, const buffer *original_packet, uin
   const uint16_t flags = 0;
   buffer *flow_mod = create_flow_mod( transaction_id, match, get_cookie(),
                                       OFPFC_ADD, idle_timeout, hard_timeout,
-                                      priority, buffer_id, 
+                                      priority, buffer_id,
                                       h->out_port_no, flags, actions );
 
   send_openflow_message( h->dpid, flow_mod );

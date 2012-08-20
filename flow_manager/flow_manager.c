@@ -78,7 +78,7 @@ typedef struct {
   int n_entries;
   int n_active_entries;
   int n_barriers;
-  messenger_context_handle *context_handle;  
+  messenger_context_handle *context_handle;
   list_element *entries;
   struct timespec expires_at;
 } flow_entry_group;
@@ -780,7 +780,7 @@ install_flow_entry_to_switch( flow_entry_private *entry ) {
   if ( ret == false ) {
     update_flow_entry_state( entry, INSTALL_FAILED );
     delete_flow_mod_transaction( entry->flow_mod_xid );
-    return false;    
+    return false;
   }
   update_flow_entry_state( entry, INSTALL_IN_PROGRESS );
   add_barrier_transaction( entry );

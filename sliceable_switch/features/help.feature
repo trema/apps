@@ -11,7 +11,7 @@ Feature: sliceable_switch help
       """
       Sliceable switch.
       Usage: sliceable_switch [OPTION]...
-      
+
         -i, --idle_timeout=TIMEOUT      idle timeout value of flow entry
         -A, --handle_arp_with_packetout handle ARP with packetout
         -s, --slice_db=DB_FILE          slice database
@@ -33,7 +33,7 @@ Feature: sliceable_switch help
       """
       Sliceable switch.
       Usage: sliceable_switch [OPTION]...
-      
+
         -i, --idle_timeout=TIMEOUT      idle timeout value of flow entry
         -A, --handle_arp_with_packetout handle ARP with packetout
         -s, --slice_db=DB_FILE          slice database

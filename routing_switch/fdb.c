@@ -46,7 +46,7 @@ typedef struct mac_db_entry {
 
 static void
 poison( uint64_t dpid, const uint8_t mac[ OFP_ETH_ALEN ] ) {
-  struct ofp_match match;  
+  struct ofp_match match;
   memset( &match, 0, sizeof( struct ofp_match ) );
   match.wildcards = ( OFPFW_ALL & ~OFPFW_DL_DST );
   memcpy( match.dl_dst, mac, OFP_ETH_ALEN );
@@ -62,7 +62,7 @@ poison( uint64_t dpid, const uint8_t mac[ OFP_ETH_ALEN ] ) {
                                       NULL );
   send_openflow_message( dpid, flow_mod );
   free_buffer( flow_mod );
-  
+
   memset( &match, 0, sizeof( struct ofp_match ) );
   match.wildcards = ( OFPFW_ALL & ~OFPFW_DL_SRC );
   memcpy( match.dl_src, mac, OFP_ETH_ALEN );
@@ -72,7 +72,7 @@ poison( uint64_t dpid, const uint8_t mac[ OFP_ETH_ALEN ] ) {
   send_openflow_message( dpid, flow_mod );
   free_buffer( flow_mod );
 
-  debug( "Poisoning all entries whose dl_src or dl_dst matches %02x:%02x:%02x:%02x:%02x:%02x at dpid %#" PRIx64, 
+  debug( "Poisoning all entries whose dl_src or dl_dst matches %02x:%02x:%02x:%02x:%02x:%02x at dpid %#" PRIx64,
          mac[ 0 ], mac[ 1 ], mac[ 2 ], mac[ 3 ], mac[ 4 ], mac[ 5 ], dpid );
 
 }
@@ -170,7 +170,7 @@ lookup_fdb( hash_table *fdb, const uint8_t mac[ OFP_ETH_ALEN ], uint64_t *dpid, 
 
   fdb_entry *entry = lookup_hash_entry( fdb, mac );
 
-  debug( "Lookup mac:%02x:%02x:%02x:%02x:%02x:%02x", 
+  debug( "Lookup mac:%02x:%02x:%02x:%02x:%02x:%02x",
          mac[ 0 ], mac[ 1 ], mac[ 2 ], mac[ 3 ], mac[ 4 ], mac[ 5 ] );
 
   if ( entry != NULL ) {

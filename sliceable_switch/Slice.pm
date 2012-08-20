@@ -449,7 +449,7 @@ sub show_bindings(){
     foreach my $id (keys(%bindings)){
 	if($bindings{$id}{'type'} == BINDING_TYPE_PORT){
 	    $port_count++;
-	    $port_out .= sprintf("%24s\t%#20x\t%8u\t%8u\n", $id, 
+	    $port_out .= sprintf("%24s\t%#20x\t%8u\t%8u\n", $id,
 				 $bindings{$id}{'datapath_id'},
 				 $bindings{$id}{'port'},
 				 $bindings{$id}{'vid'});
@@ -460,7 +460,7 @@ sub show_bindings(){
 	}
 	elsif($bindings{$id}{'type'} == BINDING_TYPE_PORT_MAC){
 	    $port_mac_count++;
-	    $port_mac_out .= sprintf("%24s\t%#20x\t%8u\t%8u\t%20s\n", $id, 
+	    $port_mac_out .= sprintf("%24s\t%#20x\t%8u\t%8u\t%20s\n", $id,
 				     $bindings{$id}{'datapath_id'},
 				     $bindings{$id}{'port'},
 				     $bindings{$id}{'vid'},

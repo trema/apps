@@ -39,7 +39,7 @@ print_port_status( const topology_port_status *s ) {
           s->dpid, s->port_no, s->name,
           ether_ntoa( ( const struct ether_addr * ) s->mac ),
           ( s->status == TD_PORT_UP ? "up" : "down" ),
-          ( s->status == TD_PORT_UP ? 
+          ( s->status == TD_PORT_UP ?
             ( s->external == TD_PORT_EXTERNAL ? "external" : "inactive-or-internal" )
             : " -" ) );
 }

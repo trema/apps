@@ -64,7 +64,7 @@ class TrafficMonitor < Trema::Controller
 
 
   def flow_mod datapath_id, macsa, macda, out_port
-    idle_timeout = 5 
+    idle_timeout = 5
     hard_timeout = 10
     info "flow_mod: [#{ datapath_id.to_hex }] idle_timeout = #{ idle_timeout }, hard_timeout = #{ hard_timeout }, match = [dl_src = #{ macsa.to_s }, dl_dst = #{ macda.to_s } ], actions = [ output: port=#{ out_port } ]"
     send_flow_mod_add(

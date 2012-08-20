@@ -147,7 +147,7 @@ add_authorized_host_from_sqlite(void *NotUsed, int argc, char **argv, char **col
   mac[ 3 ] = ( uint8_t ) ( ( mac_u64 >> 16 ) & 0xff );
   mac[ 4 ] = ( uint8_t ) ( ( mac_u64 >> 8 ) & 0xff );
   mac[ 5 ] = ( uint8_t ) ( mac_u64  & 0xff );
-  
+
   add_authorized_host( mac );
 
   return 0;

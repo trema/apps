@@ -501,7 +501,7 @@ lookup_path_by_match( struct ofp_match match, int *n_paths, path **paths ) {
     *n_paths = max_paths;
 
     return false;
-  } 
+  }
 
   return true;
 }
