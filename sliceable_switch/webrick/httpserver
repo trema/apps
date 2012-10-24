@@ -1,0 +1,86 @@
+#!/usr/bin/env ruby
+#
+# Copyright (C) 2012 NEC Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 2, as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+require 'optparse'
+require 'webrick'
+
+config_cgi = './config.cgi'
+port = 8888
+access_log_file = '/tmp/access.log'
+pid_file = '/tmp/httpserver.pid'
+daemon = true
+
+class CGIHandler < WEBrick::HTTPServlet::CGIHandler
+  alias do_PUT do_GET
+  alias do_DELETE do_GET
+end
+
+class HTTPServer < WEBrick::HTTPServer
+  def initialize( config = {} )
+    unless config[ :BindAddress ]
+      config[ :BindAddress ] = '0.0.0.0'
+    end
+    unless config[ :Port ]
+      config[ :Port ] = 8888
+    end
+    if config[ :AccessLogFile ]
+      access_io = File.open( config[ :AccessLogFile ], 'w' )
+      config[ :AccessLog ] = [
+        [ access_io, WEBrick::AccessLog::COMMON_LOG_FORMAT ],
+        [ access_io, WEBrick::AccessLog::REFERER_LOG_FORMAT ]
+      ]
+    end
+    if config[ :PidFile ]
+      config[ :StartCallback ] = proc {
+        File.open( config[ :PidFile ], 'w' ) { | file | file.puts Process.pid }
+      }
+      config[ :StopCallback ] = proc {
+        File.unlink( config[ :PidFile ] )
+      }
+    end
+    if config[ :Daemon ]
+      config[ :ServerType ] = WEBrick::Daemon
+    end
+    super( config )
+    [ :INT, :TERM ].each do | each |
+      trap( each ) { shutdown }
+    end
+  end
+end
+
+OptionParser.new do | opt |
+  opt.on( '-D' ) do
+    daemon = false
+    access_log_file = nil
+    pid_file = nil
+  end
+  opt.on( '-c CONFIG-CGI' ) do | value |
+    config_cgi = value
+  end
+  opt.parse!( ARGV )
+end
+
+server = HTTPServer.new(
+  :Port => port,
+  :AccessLogFile => access_log_file,
+  :PidFile => pid_file,
+  :Daemon => daemon
+)
+server.mount( '/', CGIHandler, config_cgi )
+
+server.start
