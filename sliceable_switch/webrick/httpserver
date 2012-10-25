@@ -64,15 +64,24 @@ class HTTPServer < WEBrick::HTTPServer
 end
 
 OptionParser.new do | opt |
-  opt.on( '-D' ) do
+  opt.on( '-D', 'debug mode (do not detach)' ) do
     daemon = false
     access_log_file = nil
     pid_file = nil
   end
-  opt.on( '-c CONFIG-CGI' ) do | value |
+  opt.on( '-c CONFIG-CGI', '--cgi=CONFIG-CGI', "specify an alternate #{ config_cgi }" ) do | value |
     config_cgi = value
   end
-  opt.parse!( ARGV )
+  opt.on( '-p PORT', '--port=PORT', "specify an alternate port number (default=#{ port })" ) do | value |
+    port = value
+  end
+  begin
+    opt.parse!( ARGV )
+  rescue OptionParser::ParseError => err
+    puts err
+    puts opt
+    exit
+  end
 end
 
 server = HTTPServer.new(
