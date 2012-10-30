@@ -64,11 +64,13 @@ send_lldp( probe_timer_entry *port ) {
   if ( !send_openflow_message( port->datapath_id, packetout ) ) {
     free_buffer( lldp );
     free_buffer( packetout );
+    delete_actions( actions );
     die( "send_openflow_message" );
   }
 
   free_buffer( lldp );
   free_buffer( packetout );
+  delete_actions( actions );
 
   debug( "Sent LLDP frame(%#" PRIx64 ", %u)", port->datapath_id, port->port_no );
   return true;
