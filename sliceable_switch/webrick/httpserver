@@ -25,6 +25,19 @@ access_log_file = '/tmp/access.log'
 pid_file = '/tmp/httpserver.pid'
 daemon = true
 
+class Daemon
+  def Daemon.start
+      exit!(0) if fork
+      Process::setsid
+      exit!(0) if fork
+#      Dir::chdir("/")
+      STDIN.reopen("/dev/null")
+      STDOUT.reopen("/dev/null", "w")
+      STDERR.reopen("/dev/null", "w")
+      yield if block_given?
+  end
+end
+
 class CGIHandler < WEBrick::HTTPServlet::CGIHandler
   alias do_PUT do_GET
   alias do_DELETE do_GET
@@ -54,7 +67,7 @@ class HTTPServer < WEBrick::HTTPServer
       }
     end
     if config[ :Daemon ]
-      config[ :ServerType ] = WEBrick::Daemon
+      config[ :ServerType ] = Daemon
     end
     super( config )
     [ :INT, :TERM ].each do | each |
@@ -63,25 +76,33 @@ class HTTPServer < WEBrick::HTTPServer
   end
 end
 
-OptionParser.new do | opt |
-  opt.on( '-D', 'debug mode (do not detach)' ) do
-    daemon = false
-    access_log_file = nil
-    pid_file = nil
-  end
-  opt.on( '-c CONFIG-CGI', '--cgi=CONFIG-CGI', "specify an alternate #{ config_cgi }" ) do | value |
-    config_cgi = value
-  end
-  opt.on( '-p PORT', '--port=PORT', "specify an alternate port number (default=#{ port })" ) do | value |
-    port = value
-  end
-  begin
-    opt.parse!( ARGV )
-  rescue OptionParser::ParseError => err
-    puts err
-    puts opt
-    exit
-  end
+opt = OptionParser.new
+
+opt.on( '-D', 'debug mode (do not detach)' ) do
+  daemon = false
+  access_log_file = nil
+  pid_file = nil
+end
+
+opt.on( '-c CONFIG-CGI', '--cgi=CONFIG-CGI', "specify an alternate #{ config_cgi }" ) do | value |
+  config_cgi = value
+end
+
+opt.on( '-p PORT', '--port=PORT', "specify an alternate port number (default=#{ port })" ) do | value |
+  port = value
+end
+
+begin
+  opt.order!( ARGV )
+rescue OptionParser::ParseError => err
+  puts err
+  puts opt
+  exit
+end
+
+if ARGV.size > 0
+  puts opt
+  exit
 end
 
 server = HTTPServer.new(
