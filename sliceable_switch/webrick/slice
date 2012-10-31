@@ -1,0 +1,168 @@
+#!/usr/bin/env ruby
+#
+# Copyright (C) 2012 NEC Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 2, as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+require 'optparse'
+require 'rubygems'
+require 'rest_client'
+require 'json'
+
+Version = '0.1'
+
+DEFAULT_BASE_URL = 'http://127.0.0.1:8888/networks'
+
+BINDING_TYPE_PORT = 0x01
+BINDING_TYPE_MAC = 0x02
+BINDING_TYPE_PORT_MAC = 0x04
+
+class Networks
+  @url
+
+  def initialize argv
+    @url = DEFAULT_BASE_URL
+
+    opt = OptionParser.new
+    opt.on( '-u BASE-URL', '--url=BASE-URL', "(default=#{ @url })" ) do | value |
+      @url = value
+    end
+    opt.on( '-h', '--help', 'help' ) do
+      usage_and_exit
+    end
+
+    begin
+      opt.order!( argv )
+    rescue OptionParser::ParseError => err
+      puts err
+      usage_and_exit
+    end
+  end
+
+  def dispatch argv
+    if argv.size == 0
+      usage_and_exit
+    end
+
+    command = argv.shift
+    begin
+      send( 'do_' + command, argv )
+    rescue => err
+      puts "Unknown command '#{ command }'"
+      usage_and_exit
+    end
+  end
+
+  private
+
+  def do_list argv = nil
+    if argv.size != 0
+      usage_and_exit
+    end
+    url = @url
+    response = request( :get, url )
+    printf "%-32s%s\n", "ID", "Description"
+    response.each do | each |
+      printf "%-32s%s\n", each[ 'id' ], each[ 'description' ]
+    end
+  end
+
+  def do_show argv
+    if argv.size != 1
+      usage_and_exit
+    end
+    begin
+    slice_id = Integer( argv.first )
+    rescue => err
+      puts err
+      usage_and_exit
+    end
+    response = request( :get, @url + '/' + slice_id.to_s )
+
+    port_based_bindings = []
+    mac_based_bindings = []
+    mac_based_bindings_on_ports = []
+    response[ 'bindings' ].each do | each |
+      case each[ 'type' ]
+      when BINDING_TYPE_PORT then
+        port_based_bindings.push( each )
+      when BINDING_TYPE_MAC then
+        mac_based_bindings.push( each )
+      when BINDING_TYPE_PORT_MAC then
+        mac_based_bindings_on_ports.push( each )
+      end
+    end
+
+    puts "[Port-based bindings]"
+    if port_based_bindings.empty?
+      puts "No bindings found."
+    else
+      port_based_bindings.sort! { | a, b | a[ 'id' ] <=> b[ 'id' ] }
+      printf "%-24s\t%-20s\t%-8s\t%s\n", "ID", "Datapath ID", "Port", "VID"
+      port_based_bindings.each do | each |
+	printf "%-24s\t%-#20x\t%8u\t%8u\n",
+	  each[ 'id' ], each[ 'datapath_id' ], each[ 'port' ], each[ 'vid' ]
+      end
+    end
+
+    puts "[MAC-based bindings]"
+    if mac_based_bindings.empty?
+      puts "No bindings found."
+    else
+      mac_based_bindings.sort! { | a, b | a[ 'id' ] <=> b[ 'id' ] }
+      printf "%-24s\t%s\n", "ID", "MAC"
+      mac_based_bindings.each do | each |
+        printf "%-24s\t%s\n", each[ 'id' ], each[ 'mac' ]
+      end
+    end
+
+    puts "[MAC-based bindings on ports]"
+    if mac_based_bindings_on_ports.empty?
+      puts "No bindings found."
+    else
+      mac_based_bindings_on_ports.sort! { | a, b | a[ 'id' ] <=> b[ 'id' ] }
+      printf "%-24s\t%-20s\t%-8s\t%-8s\t%s\n", "ID", "Datapath ID", "Port", "VID", "MAC"
+      mac_based_bindings_on_ports.each do | each |
+        printf "%-24s\t%-#20x\t%8u\t%8u\t%s\n",
+          each[ 'id' ], each[ 'datapath_id' ], each[ 'port' ], each[ 'vid' ], each[ 'mac' ]
+      end
+    end
+  end
+
+  def usage_and_exit
+    puts  <<"EOS"
+Usage:
+  slice list
+  slice show SLICE_ID
+EOS
+    exit 1
+  end
+
+  def request method, url
+    begin
+      response = RestClient.send( method, url )
+      JSON.parse( response.body )
+    rescue => err
+      puts err
+      exit 1
+    end
+  end
+
+end
+
+networks = Networks.new( ARGV )
+networks.dispatch( ARGV )
+
+exit 0

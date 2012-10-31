@@ -1,0 +1,136 @@
+#!/usr/bin/env ruby
+#
+# Copyright (C) 2012 NEC Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 2, as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+require 'optparse'
+require 'rubygems'
+require 'rest_client'
+require 'json'
+
+Version = '0.1'
+
+DEFAULT_BASE_URL = 'http://127.0.0.1:8888/filters'
+
+class Filters
+  @url
+
+  def initialize argv
+    @url = DEFAULT_BASE_URL
+
+    opt = OptionParser.new
+    opt.on( '-u BASE-URL', '--url=BASE-URL', "(default=#{ @url })" ) do | value |
+      @url = value
+    end
+    opt.on( '-h', '--help', 'help' ) do
+      usage_and_exit
+    end
+
+    begin
+      opt.order!( argv )
+    rescue OptionParser::ParseError => err
+      puts err
+      usage_and_exit
+    end
+  end
+
+  def dispatch argv
+    if argv.size == 0
+      usage_and_exit
+    end
+
+    command = argv.shift
+    begin
+      send( 'do_' + command, argv )
+    rescue => err
+      puts "Unknown command '#{ command }'"
+      usage_and_exit
+    end
+  end
+
+  private
+
+  def do_list argv = nil
+    if argv.size != 0
+      usage_and_exit
+    end
+    url = @url
+    response = request( :get, url )
+    printf "%s\n", "ID"
+    response.each do | each |
+      printf "%s\n", each[ 'id' ]
+    end
+  end
+
+  def do_show argv
+    if argv.size != 1
+      usage_and_exit
+    end
+    begin
+    filter_id = argv.first
+    rescue => err
+      puts err
+      usage_and_exit
+    end
+    response = request( :get, @url + '/' + filter_id )
+    puts <<"EOS"
+[#{ response[ 'id' ] }]
+priority: #{ response[ 'priority' ] }
+ofp_wildcards: #{ response[ 'ofp_wildcards' ] }
+in_port: #{ response[ 'in_port' ] }
+dl_src: #{ response[ 'dl_src' ] }
+dl_dst: #{ response[ 'dl_dst' ] }
+dl_vlan: #{ response[ 'dl_vlan' ] }
+dl_vlan_pcp: #{ response[ 'dl_vlan_pcp' ] }
+dl_type: #{ response[ 'dl_type' ] }
+nw_tos: #{ response[ 'nw_tos' ] }
+nw_proto: #{ response[ 'nw_proto' ] }
+nw_src: #{ response[ 'nw_src' ] }
+nw_dst: #{ response[ 'nw_dst' ] }
+tp_src: #{ response[ 'tp_src' ] }
+tp_dst: #{ response[ 'tp_dst' ] }
+wildcards: #{ response[ 'wildcards' ] }
+in_datapath_id: #{ response[ 'in_datapath_id' ] }
+slice: #{ response[ 'slice' ] }
+action: #{ response[ 'action' ] }
+EOS
+  end
+
+  def usage_and_exit
+    puts  <<"EOS"
+Usage:
+  filter list
+  filter show FILTER_ID
+EOS
+    exit 1
+  end
+
+  def request method, url
+    begin
+      response = RestClient.send( method, url )
+      JSON.parse( response.body )
+    rescue => err
+      puts err
+      exit 1
+    end
+  end
+
+end
+
+filters = Filters.new( ARGV )
+filters.dispatch( ARGV )
+
+exit 0
