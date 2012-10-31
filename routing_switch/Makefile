@@ -41,7 +41,7 @@ run_acceptance_test:
 	  ( \
 	    file=`pwd`/$$feature; \
 	    cd ${TREMA}; \
-	    ${GEM_BIN}/cucumber -r features $$file; \
+	    ${GEM_BIN}/cucumber -r ../apps/routing_switch/features $$file; \
 	  ) \
 	done
 

@@ -226,13 +226,15 @@ Feature: control multiple openflow switchies using routing_switch
       Switching HUB.
       Usage: routing_switch [OPTION]...
 
-        -i, --idle_timeout=TIMEOUT       Idle timeout value of flow entry
-        -A, --handle_arp_with_packetout  Handle ARP with packetout
-        -n, --name=SERVICE_NAME     service name
-        -t, --topology=SERVICE_NAME topology service name
-        -d, --daemonize             run in the background
-        -l, --logging_level=LEVEL   set logging level
-        -h, --help                  display this help and exit
+        -i, --idle_timeout=TIMEOUT      idle timeout value of flow entry
+        -A, --handle_arp_with_packetout handle ARP with packetout
+        -n, --name=SERVICE_NAME         service name
+        -t, --topology=SERVICE_NAME     topology service name
+        -d, --daemonize                 run in the background
+        -l, --logging_level=LEVEL       set logging level
+        -g, --syslog                    output log messages to syslog
+        -f, --logging_facility=FACILITY set syslog facility
+        -h, --help                      display this help and exit
       """
 
 
@@ -243,11 +245,13 @@ Feature: control multiple openflow switchies using routing_switch
       Switching HUB.
       Usage: routing_switch [OPTION]...
 
-        -i, --idle_timeout=TIMEOUT       Idle timeout value of flow entry
-        -A, --handle_arp_with_packetout  Handle ARP with packetout
-        -n, --name=SERVICE_NAME     service name
-        -t, --topology=SERVICE_NAME topology service name
-        -d, --daemonize             run in the background
-        -l, --logging_level=LEVEL   set logging level
-        -h, --help                  display this help and exit
+        -i, --idle_timeout=TIMEOUT      idle timeout value of flow entry
+        -A, --handle_arp_with_packetout handle ARP with packetout
+        -n, --name=SERVICE_NAME         service name
+        -t, --topology=SERVICE_NAME     topology service name
+        -d, --daemonize                 run in the background
+        -l, --logging_level=LEVEL       set logging level
+        -g, --syslog                    output log messages to syslog
+        -f, --logging_facility=FACILITY set syslog facility
+        -h, --help                      display this help and exit
       """
