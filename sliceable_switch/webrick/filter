@@ -69,6 +69,8 @@ class Filters
     end
     url = @url
     response = request( :get, url )
+
+    response.sort! { | a, b | a[ 'id' ] <=> b[ 'id' ] }
     printf "%s\n", "ID"
     response.each do | each |
       printf "%s\n", each[ 'id' ]

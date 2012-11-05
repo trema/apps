@@ -91,6 +91,8 @@ class Networks
     end
     response = request( :get, @url + '/' + slice_id.to_s )
 
+    printf "[Description]\n%s\n", response [ 'description' ];
+
     port_based_bindings = []
     mac_based_bindings = []
     mac_based_bindings_on_ports = []

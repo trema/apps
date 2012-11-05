@@ -19,6 +19,8 @@
 require 'optparse'
 require 'webrick'
 
+Version = '0.1'
+
 config_cgi = './config.cgi'
 port = 8888
 access_log_file = '/tmp/access.log'
