@@ -81,7 +81,7 @@ sub create_slice(){
 	$description = "";
     }
 
-    debug("creating a alice (number = %u, id = %s, description = %s).",
+    debug("creating a slice (number = %u, id = %s, description = %s).",
 	  $slice_number, $slice_id, $description);
 
     $ret = $self->{'dbh'}->do("INSERT INTO slices VALUES ($slice_number,'$slice_id','$description')");
@@ -106,7 +106,7 @@ sub update_slice(){
 	return NO_SLICE_FOUND;
     }
 
-    debug("updating a alice (number = %u, id = %s, description = %s).",
+    debug("updating a slice (number = %u, id = %s, description = %s).",
 	  $slice_number, $slice_id, $description);
 
     my $ret = $self->{'dbh'}->do("UPDATE slices SET description = '$description' WHERE number = $slice_number");
@@ -122,7 +122,7 @@ sub update_slice(){
 sub destroy_slice(){
     my ($self, $slice_id) = @_;
 
-    debug("destroying a alice (id = %s).", $slice_id);
+    debug("destroying a slice (id = %s).", $slice_id);
 
     my $slice_number;
     if($self->get_slice_number_by_id($slice_id, \$slice_number) < 0){
