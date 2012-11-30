@@ -80,6 +80,7 @@ sub create_slice(){
     if(!defined($description)){
 	$description = "";
     }
+    $description =~ s/'/''/;
 
     debug("creating a slice (number = %u, id = %s, description = %s).",
 	  $slice_number, $slice_id, $description);
@@ -100,6 +101,7 @@ sub update_slice(){
     if(!defined($description)){
 	$description = "";
     }
+    $description =~ s/'/''/;
 
     my $slice_number;
     if($self->get_slice_number_by_id($slice_id, \$slice_number) < 0){
