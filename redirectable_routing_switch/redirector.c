@@ -158,9 +158,9 @@ lookup_host( const uint32_t ip ) {
   time_t updated_at = entry->updated_at;
 
   debug( "A host entry found (mac = %02x:%02x:%02x:%02x:%02x:%02x, "
-         "ip = %s, dpid = %#" PRIx64 ", port = %u, updated_at = %u).",
+         "ip = %s, dpid = %#" PRIx64 ", port = %u, updated_at = %" PRIu64 ").",
          mac[ 0 ], mac[ 1 ], mac[ 2 ], mac[ 3 ], mac[ 4 ], mac[ 5 ],
-         inet_ntoa( addr ), dpid, port, updated_at );
+         inet_ntoa( addr ), dpid, port, ( int64_t ) updated_at );
 
   return entry;
 }
@@ -286,7 +286,7 @@ init_tun( const char *name ) {
   }
   ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
   if( ioctl( nfd, SIOCSIFFLAGS, ( void * ) &ifr ) < 0 ) {
-    error( "Cannot set interface flags to %#lx.", ifr.ifr_flags );
+    error( "Cannot set interface flags to %#x.", ifr.ifr_flags );
     close( nfd );
     return false;
   }

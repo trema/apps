@@ -1344,7 +1344,7 @@ handle_flow_removed( uint64_t datapath_id, uint32_t transaction_id, struct ofp_m
   match_to_string( &match, match_string, sizeof( match_string ) );
   debug( "Handleing Flow Removed ( datapath_id %#" PRIx64 ", transaction_id = %#x, match = [%s], "
          "cookie = %#" PRIx64 ", priority = %u, reason = %#x, duration_sec = %u, duration_nsec = %u, "
-         "idle_timeout = %u, packet_count = %u, byte_count = %u, user_data = %p ).",
+         "idle_timeout = %u, packet_count = %" PRIu64 ", byte_count = %" PRIu64 ", user_data = %p ).",
          datapath_id, transaction_id, match_string, cookie, priority, reason, duration_sec, duration_nsec,
          idle_timeout, packet_count, byte_count, user_data );
 
