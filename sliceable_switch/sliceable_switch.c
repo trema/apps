@@ -370,9 +370,9 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
 
   sliceable_switch *sliceable_switch = user_data;
 
-  debug( "Packet-In received ( datapath_id = %#" PRIx64 ", transaction_id = %#lx, "
-         "buffer_id = %#lx, total_len = %u, in_port = %u, reason = %#x, "
-         "data_len = %u ).", datapath_id, transaction_id, buffer_id,
+  debug( "Packet-In received ( datapath_id = %#" PRIx64 ", transaction_id = %#" PRIx32 ", "
+         "buffer_id = %#" PRIx32 ", total_len = %u, in_port = %u, reason = %#x, "
+         "data_len = %zu ).", datapath_id, transaction_id, buffer_id,
          total_len, in_port, reason, data->length );
 
   if ( in_port > OFPP_MAX && in_port != OFPP_LOCAL ) {
@@ -448,7 +448,7 @@ allow:
     if ( lookup_fdb( sliceable_switch->fdb, dst, &out_datapath_id, &out_port ) ) {
       // Host is located, so resolve path and send flowmod
       if ( ( datapath_id == out_datapath_id ) && ( in_port == out_port ) ) {
-        debug( "Input port and out port are the same ( datapath_id = %#llx, port = %u ).",
+        debug( "Input port and out port are the same ( datapath_id = %#" PRIx64 ", port = %u ).",
                datapath_id, in_port );
         return;
       }

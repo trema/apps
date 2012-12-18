@@ -282,8 +282,8 @@ add_port_slice_binding( uint64_t datapath_id, uint16_t port, uint16_t vid, uint1
   entry->updated_at = time( NULL );
 
   info( "Adding a port-slice binding ( type = %#x, datapath_id = %#" PRIx64
-        ", port = %#x, vid = %#x, slice_number = %#x, id = %s, dynamic = %d, updated_at = %u ).",
-        entry->type, datapath_id, port, vid, slice_number, id, dynamic, entry->updated_at );
+        ", port = %#x, vid = %#x, slice_number = %#x, id = %s, dynamic = %d, updated_at = %" PRId64 " ).",
+        entry->type, datapath_id, port, vid, slice_number, id, dynamic, ( int64_t ) entry->updated_at );
 
   if ( lookup_hash_entry( slice_db.port_slice_map, entry ) != NULL ) {
     xfree( entry );
@@ -320,9 +320,9 @@ add_mac_slice_binding( const uint8_t *mac, uint16_t slice_number, const char *id
   entry->updated_at = time( NULL );
 
   info( "Adding a mac-slice binding ( type = %#x, %02x:%02x:%02x:%02x:%02x:%02x, slice_number = %#x, id = %s, "
-        "dynamic = %d, updated_at = %u ).",
+        "dynamic = %d, updated_at = %" PRId64 " ).",
         entry->type, mac[ 0 ], mac[ 1 ], mac[ 2 ], mac[ 3 ], mac[ 4 ], mac[ 5 ], slice_number, id,
-        entry->dynamic, entry->updated_at );
+        entry->dynamic, ( int64_t ) entry->updated_at );
 
   if ( lookup_hash_entry( slice_db.mac_slice_map, entry ) != NULL ) {
     xfree( entry );
@@ -357,9 +357,9 @@ add_port_mac_slice_binding( uint64_t datapath_id, uint16_t port, uint16_t vid, u
   entry->updated_at = time( NULL );
 
   info( "Adding a port_mac-slice binding ( type = %#x, datapath_id = %#" PRIx64 ",port = %#x, vid = %#x, "
-        "mac = %02x:%02x:%02x:%02x:%02x:%02x:, slice_number = %#x, id = %s, dynamic = %d, updated_at = %u ).",
+        "mac = %02x:%02x:%02x:%02x:%02x:%02x:, slice_number = %#x, id = %s, dynamic = %d, updated_at = %" PRId64 " ).",
         entry->type, datapath_id, port, vid, mac[ 0 ], mac[ 1 ], mac[ 2 ], mac[ 3 ], mac[ 4 ], mac[ 5 ],
-        slice_number, id, entry->dynamic, entry->updated_at );
+        slice_number, id, entry->dynamic, ( int64_t ) entry->updated_at );
 
   if ( lookup_hash_entry( slice_db.port_mac_slice_map, entry ) != NULL ) {
     xfree( entry );
@@ -479,9 +479,9 @@ age_dynamic_port_slice_bindings() {
       if ( ( binding->dynamic == true ) &&
            ( ( binding->updated_at + BINDING_TIMEOUT ) < time( NULL ) ) ){
         info( "Deleting a port-slice binding ( type = %#x, datapath_id = %#" PRIx64
-              ", port = %#x, vid = %#x, slice_number = %#x, id = %s, dynamic = %d, updated_at = %u ).",
+              ", port = %#x, vid = %#x, slice_number = %#x, id = %s, dynamic = %d, updated_at = %" PRId64 " ).",
               binding->type, binding->datapath_id, binding->port, binding->vid, binding->slice_number, binding->id,
-              binding->dynamic, binding->updated_at );
+              binding->dynamic, ( int64_t ) binding->updated_at );
         delete_hash_entry( slice_db.port_slice_map, entry->value );
         delete_hash_entry( slice_db.port_slice_vid_map, entry->value );
         xfree( entry->value );
@@ -508,9 +508,9 @@ delete_dynamic_port_slice_bindings( uint64_t datapath_id, uint16_t port ) {
       if ( binding->dynamic == true &&
            binding->datapath_id == datapath_id && binding->port == port ) {
         info( "Deleting a port-slice binding ( type = %#x, datapath_id = %#" PRIx64
-              ", port = %#x, vid = %#x, slice_number = %#x, id = %s, dynamic = %d, updated_at = %u ).",
+              ", port = %#x, vid = %#x, slice_number = %#x, id = %s, dynamic = %d, updated_at = %" PRId64 " ).",
               binding->type, binding->datapath_id, binding->port, binding->vid, binding->slice_number, binding->id,
-              binding->dynamic, binding->updated_at );
+              binding->dynamic, ( int64_t ) binding->updated_at );
         delete_hash_entry( slice_db.port_slice_map, entry->value );
         delete_hash_entry( slice_db.port_slice_vid_map, entry->value );
         xfree( entry->value );

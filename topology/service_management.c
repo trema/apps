@@ -130,7 +130,7 @@ subscribe( const messenger_context_handle *handle, void *data, size_t len ) {
   topology_request *req = data;
 
   if ( len == 0 ) {
-    error( "Invalid topology subscribe request length(%u)", len );
+    error( "Invalid topology subscribe request length(%zu)", len );
     return;
   }
 
@@ -158,7 +158,7 @@ unsubscribe( const messenger_context_handle *handle, void *data, size_t len ) {
   topology_request *req = data;
 
   if ( len == 0 ) {
-    error( "Invalid topology unsubscribe request length(%u)", len );
+    error( "Invalid topology unsubscribe request length(%zu)", len );
     return;
   }
 
@@ -252,7 +252,7 @@ update_link_status( const messenger_context_handle *handle, void *data, size_t l
   buffer *response = NULL;
 
   if ( len != sizeof( topology_update_link_status ) ) {
-    error( "Invalid update link status request length(%u)", len );
+    error( "Invalid update link status request length(%zu)", len );
     goto send_response;
   }
 

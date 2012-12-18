@@ -125,7 +125,7 @@ handle_path_setup_request(  uint16_t tag, void *data, size_t length ) {
     return;
   }
   if ( length < sizeof( path_manager_path ) ) {
-    error( "Too short path setup request message ( length = %u ).", length );
+    error( "Too short path setup request message ( length = %zu ).", length );
     return;
   }
 

@@ -244,7 +244,7 @@ switch_features_reply( uint64_t datapath_id, uint32_t transaction_id,
       continue;
     }
     delete_notification( sw, port );
-    debug( "Deleted port(%u) in switch(%#" PRIx64 ")", datapath_id, port->port_no );
+    debug( "Deleted port(%u) in switch(%#" PRIx64 ")", port->port_no, datapath_id );
   }
 }
 

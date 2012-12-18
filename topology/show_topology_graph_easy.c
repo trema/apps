@@ -75,7 +75,7 @@ print_with_graph_easy_format( void *param, size_t entries, const topology_link_s
 
   UNUSED( param );
 
-  debug( "topology: entries %d", entries );
+  debug( "topology: entries %zu", entries );
 
   hash_table *link_hash = create_hash( compare_link, hash_link );
   // show_topology graph-easy | graph-easy

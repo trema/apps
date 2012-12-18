@@ -77,7 +77,7 @@ print_with_dsl_format( void *param, size_t entries, const topology_link_status *
 
   UNUSED( param );
 
-  debug( "topology: entries %d", entries );
+  debug( "topology: entries %zu", entries );
 
   hash_table *dpid_hash = create_hash( compare_datapath_id, hash_datapath_id );
   hash_table *link_hash = create_hash( compare_link, hash_link );

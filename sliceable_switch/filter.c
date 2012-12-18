@@ -149,7 +149,7 @@ lookup_filter( filter_match match ) {
   char match_str[ 1024 ];
   match_to_string( &match.ofp_match, match_str, sizeof( match_str ) );
 
-  debug( "Looking up filter entry ( wildcards = %#x, in_datapath_id = %#llx, slice_number = %#x, ofp_match = [%s] ).",
+  debug( "Looking up filter entry ( wildcards = %#x, in_datapath_id = %#" PRIx64 ", slice_number = %#x, ofp_match = [%s] ).",
          match.wildcards, match.in_datapath_id, match.slice_number, match_str );
 
   if ( match.wildcards == 0 && match.ofp_match.wildcards == 0 ) {
@@ -206,7 +206,7 @@ lookup_filter_strict( filter_match match, uint16_t priority ) {
   char match_str[ 1024 ];
   match_to_string( &match.ofp_match, match_str, sizeof( match_str ) );
 
-  debug( "Looking up filter entry ( wildcards = %#x, in_datapath_id = %#llx, slice_number = %#x, ofp_match = [%s] ).",
+  debug( "Looking up filter entry ( wildcards = %#x, in_datapath_id = %#" PRIx64 ", slice_number = %#x, ofp_match = [%s] ).",
          match.wildcards, match.in_datapath_id, match.slice_number, match_str );
 
   if ( match.wildcards == 0 && match.ofp_match.wildcards == 0 ) {
@@ -242,7 +242,7 @@ add_filter_entry( filter_match match, uint16_t priority, uint8_t action ) {
   char match_str[ 1024 ];
 
   match_to_string( &match.ofp_match, match_str, sizeof( match_str ) );
-  info( "Adding a filter entry ( wildcards = %#x, in_datapath_id = %#llx, slice_number = %#x, ofp_match = [%s], priority = %u, action = %#x ).",
+  info( "Adding a filter entry ( wildcards = %#x, in_datapath_id = %#" PRIx64 ", slice_number = %#x, ofp_match = [%s], priority = %u, action = %#x ).",
         match.wildcards, match.in_datapath_id, match.slice_number, match_str, priority, action );
 
   new_entry = lookup_filter_strict( match, priority );

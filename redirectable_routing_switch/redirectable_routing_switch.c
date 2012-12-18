@@ -288,9 +288,9 @@ handle_packet_in( uint64_t datapath_id, uint32_t transaction_id,
 
   routing_switch *routing_switch = user_data;
 
-  debug( "Packet-In received ( datapath_id = %#" PRIx64 ", transaction_id = %#lx, "
-         "buffer_id = %#lx, total_len = %u, in_port = %u, reason = %#x, "
-         "data_len = %u ).", datapath_id, transaction_id, buffer_id,
+  debug( "Packet-In received ( datapath_id = %#" PRIx64 ", transaction_id = %#" PRIx32 ", "
+         "buffer_id = %#" PRIx32 ", total_len = %u, in_port = %u, reason = %#x, "
+         "data_len = %zu ).", datapath_id, transaction_id, buffer_id,
          total_len, in_port, reason, data->length );
 
   const port_info *port = lookup_port( routing_switch->switches, datapath_id, in_port );

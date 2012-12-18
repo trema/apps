@@ -158,9 +158,9 @@ lookup_host( const uint32_t ip ) {
   time_t updated_at = entry->updated_at;
 
   debug( "A host entry found (mac = %02x:%02x:%02x:%02x:%02x:%02x, "
-         "ip = %s, dpid = %#" PRIx64 ", port = %u, updated_at = %u).",
+         "ip = %s, dpid = %#" PRIx64 ", port = %u, updated_at = %" PRId64 ").",
          mac[ 0 ], mac[ 1 ], mac[ 2 ], mac[ 3 ], mac[ 4 ], mac[ 5 ],
-         inet_ntoa( addr ), dpid, port, updated_at );
+         inet_ntoa( addr ), dpid, port, ( int64_t ) updated_at );
 
   return entry;
 }
@@ -286,7 +286,7 @@ init_tun( const char *name ) {
   }
   ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
   if( ioctl( nfd, SIOCSIFFLAGS, ( void * ) &ifr ) < 0 ) {
-    error( "Cannot set interface flags to %#lx.", ifr.ifr_flags );
+    error( "Cannot set interface flags to %#" PRIx32 ".", ifr.ifr_flags );
     close( nfd );
     return false;
   }
@@ -325,7 +325,7 @@ recv_packet_from_tun() {
     return;
   }
 
-  debug( "%d bytes packet received from tun interface (fd = %d).", ret, fd );
+  debug( "%zd bytes packet received from tun interface (fd = %d).", ret, fd );
 
   // FIXME: we need to parse the ipv4 packet.
 
@@ -382,7 +382,7 @@ static void
 send_packet_to_tun( const void *data, size_t length ) {
   ssize_t ret;
 
-  debug( "Sending an IP packet to a tun interface (fd = %d, length = %u).",
+  debug( "Sending an IP packet to a tun interface (fd = %d, length = %zu).",
          fd, length );
 
   ret = write( fd, data, length );
@@ -395,10 +395,10 @@ send_packet_to_tun( const void *data, size_t length ) {
   }
 
   if ( ret != ( ssize_t ) length ) {
-    warn( "Only a part of packet is sent (pkt_len = %d, sent_len = %u).", length, ret );
+    warn( "Only a part of packet is sent (pkt_len = %zu, sent_len = %zd).", length, ret );
   }
 
-  debug( "A packet is sent to a tun interface (fd = %d, sent_len = %u).", fd, length );
+  debug( "A packet is sent to a tun interface (fd = %d, sent_len = %zu).", fd, length );
 }
 
 
@@ -470,7 +470,7 @@ finalize_redirector() {
 
 void
 redirect( uint64_t datapath_id, uint16_t in_port, const buffer *data ) {
-  debug( "A message received (dpid = %#" PRIx64 ", in_port = %u, length = %u).",
+  debug( "A message received (dpid = %#" PRIx64 ", in_port = %u, length = %zu).",
          datapath_id, in_port, data->length );
 
   packet_info packet_info = get_packet_info( data );

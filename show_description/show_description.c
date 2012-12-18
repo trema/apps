@@ -136,7 +136,6 @@ handle_features_reply( uint64_t datapath_id, uint32_t transaction_id, uint32_t n
     );
     info( "  Port name: %s", phy_port->name );
   }
-  info( "" );
 
   delete_hash_entry( show_desc->db, &datapath_id );
   show_desc->count--;

@@ -97,7 +97,7 @@ print_with_csv_format( void *param, size_t entries, const topology_link_status *
 
   UNUSED( param );
 
-  debug( "topology: entries %d", entries );
+  debug( "topology: entries %zu", entries );
 
   list_element *link;
   create_list( &link );

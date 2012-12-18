@@ -514,7 +514,7 @@ handle_notification( uint16_t tag, void *data, size_t length ) {
   }
 
   if ( length != sizeof( flow_entry_group_teardown ) ) {
-    error( "Invalid teardown notification ( length = %u ).", length );
+    error( "Invalid teardown notification ( length = %zu ).", length );
     return;
   }
 
@@ -529,7 +529,7 @@ handle_reply( uint16_t tag, void *data, size_t length, void *user_data ) {
     case MESSENGER_FLOW_ENTRY_GROUP_SETUP_REPLY:
     {
       if ( length != sizeof( flow_entry_group_setup_reply ) ) {
-        error( "Invalid setup reply ( length = %u ).", length );
+        error( "Invalid setup reply ( length = %zu ).", length );
         return;
       }
       flow_entry_group_setup_reply *reply = data;
@@ -542,7 +542,7 @@ handle_reply( uint16_t tag, void *data, size_t length, void *user_data ) {
     case MESSENGER_FLOW_ENTRY_GROUP_TEARDOWN_REPLY:
     {
       if ( length != sizeof( flow_entry_group_teardown_reply ) ) {
-        error( "Invalid teardown reply ( length = %u ).", length );
+        error( "Invalid teardown reply ( length = %zu ).", length );
         return;
       }
       flow_entry_group_teardown_reply *reply = data;
@@ -559,7 +559,7 @@ handle_reply( uint16_t tag, void *data, size_t length, void *user_data ) {
     break;
     default:
     {
-      error( "Undefined reply tag ( tag = %#x, length = %u ).", tag, length );
+      error( "Undefined reply tag ( tag = %#x, length = %zu ).", tag, length );
     }
     return;
   }
