@@ -27,7 +27,7 @@ module Trema
       "cookie = #{ cookie }, " +
       "idle_timeout = #{ idle_timeout }, " +
       "hard_timeout = #{ hard_timeout }, " +
-      "duration = #{ duration }, " +
+      "duration = #{ duration_sec }, " +
       "packet_count = #{ packet_count }, " +
       "byte_count = #{ byte_count }, " +
       "match = [#{ match.to_s }], " +
@@ -59,11 +59,9 @@ class FlowDumper < Controller
       end
     end
 
-    if message.more?
-      @num_switches -= 1
-      if @num_switches == 0
-        shutdown!
-      end
+    @num_switches -= 1
+    if @num_switches == 0
+      shutdown!
     end
   end
 end
