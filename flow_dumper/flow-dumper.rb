@@ -24,7 +24,7 @@ module Trema
     def to_s
       "table_id = #{ table_id }, " +
       "priority = #{ priority }, " +
-      "cookie = #{ cookie }, " +
+      "cookie = #{ cookie.to_hex }, " +
       "idle_timeout = #{ idle_timeout }, " +
       "hard_timeout = #{ hard_timeout }, " +
       "duration = #{ duration_sec }, " +
@@ -32,6 +32,13 @@ module Trema
       "byte_count = #{ byte_count }, " +
       "match = [#{ match.to_s }], " +
       "actions = [#{ actions.to_s }]"
+    end
+  end
+
+
+  class SendOutPort
+    def to_s
+      "output: port=#{ @port_number } max_len=#{ @max_len }"
     end
   end
 end
