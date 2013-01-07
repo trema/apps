@@ -34,17 +34,13 @@ module Trema
       "actions = [#{ actions.to_s }]"
     end
   end
-
-
-  class SendOutPort
-    def to_s
-      "output: port=#{ @port_number } max_len=#{ @max_len }"
-    end
-  end
 end
 
 
 class FlowDumper < Controller
+  periodic_timer_event :timed_out, 2
+
+
   def start
     send_list_switches_request
   end
@@ -70,6 +66,11 @@ class FlowDumper < Controller
     if @num_switches == 0
       shutdown!
     end
+  end
+
+  
+  def timed_out
+    shutdown!
   end
 end
 
