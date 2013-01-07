@@ -1,15 +1,19 @@
 #
-# Copyright (C) 2012 NEC Corporation
+# Copyright (C) 2012-2013 NEC Corporation
 #
 
 TREMA = ../../trema
 GEM_BIN = `ruby -e 'require "rubygems"; puts Gem::bindir'`
 SHELL = /bin/sh
 
-CC = gcc
+TREMA_CONFIG = $(shell which trema-config)
+ifeq ($(TREMA_CONFIG),)
+  TREMA_CONFIG = $(TREMA)/trema-config
+endif
 
-CFLAGS = $(shell $(TREMA)/trema-config --cflags) -g -std=gnu99 -D_GNU_SOURCE -fno-strict-aliasing -Werror -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith
-LDFLAGS = $(shell $(TREMA)/trema-config --libs)
+CC = gcc
+CFLAGS = $(shell $(TREMA_CONFIG) --cflags) -g -std=gnu99 -D_GNU_SOURCE -fno-strict-aliasing -Werror -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith
+LDFLAGS = $(shell $(TREMA_CONFIG) --libs)
 
 TARGET = show_description
 SRCS = show_description.c

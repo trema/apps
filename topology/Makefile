@@ -1,17 +1,22 @@
 #
-# Copyright (C) 2011 NEC Corporation
+# Copyright (C) 2011-2013 NEC Corporation
 #
 
 TREMA = ../../trema
 GEM_BIN = `ruby -e 'require "rubygems"; puts Gem::bindir'`
 SHELL = /bin/sh
 
+TREMA_CONFIG = $(shell which trema-config)
+ifeq ($(TREMA_CONFIG),)
+  TREMA_CONFIG = $(TREMA)/trema-config
+endif
+
 CC = gcc
 AR = ar
 RANLIB = ranlib
 
-CFLAGS = $(shell $(TREMA)/trema-config --cflags) -g -std=gnu99 -D_GNU_SOURCE -fno-strict-aliasing -Werror -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith
-LDFLAGS = $(shell $(TREMA)/trema-config --libs)
+CFLAGS = $(shell $(TREMA_CONFIG) --cflags) -g -std=gnu99 -D_GNU_SOURCE -fno-strict-aliasing -Werror -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith
+LDFLAGS = $(shell $(TREMA_CONFIG) --libs)
 
 TARGET_LIB = libtopology.a
 SRCS_LIB = libtopology.c topology_service_interface_option_parser.c

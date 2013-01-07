@@ -1,12 +1,17 @@
 #
-# Copyright (C) 2011 NEC Corporation
+# Copyright (C) 2011-2013 NEC Corporation
 #
 
 TREMA = ../../trema
 
+TREMA_CONFIG = $(shell which trema-config)
+ifeq ($(TREMA_CONFIG),)
+  TREMA_CONFIG = $(TREMA)/trema-config
+endif
+
 CC = gcc
-CFLAGS = $(shell $(TREMA)/trema-config --cflags) -std=gnu99 -D_GNU_SOURCE -Wall
-LDFLAGS = $(shell $(TREMA)/trema-config --libs)
+CFLAGS = $(shell $(TREMA_CONFIG) --cflags) -std=gnu99 -D_GNU_SOURCE -Wall
+LDFLAGS = $(shell $(TREMA_CONFIG) --libs)
 
 TARGET = simple_load_balancer
 SRCS = simple_load_balancer.c
