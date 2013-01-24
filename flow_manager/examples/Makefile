@@ -8,8 +8,13 @@ CC = gcc
 AR = ar
 RANLIB = ranlib
 
-CFLAGS = $(shell $(TREMA)/trema-config --cflags) -std=gnu99 -D_GNU_SOURCE -g -fno-strict-aliasing -Werror -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith -I. -I..
-LDFLAGS = $(shell $(TREMA)/trema-config --libs) -L.. -lpath
+TREMA_CONFIG = $(shell which trema-config)
+ifeq ($(TREMA_CONFIG),)
+  TREMA_CONFIG = $(TREMA)/trema-config
+endif
+
+CFLAGS = $(shell $(TREMA_CONFIG) --cflags) -std=gnu99 -D_GNU_SOURCE -g -fno-strict-aliasing -Werror -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith -I. -I..
+LDFLAGS = $(shell $(TREMA_CONFIG) --libs) -L.. -lpath
 
 SRCS_COMMON = utils.c
 OBJS_COMMON = $(SRCS_COMMON:.c=.o)
