@@ -589,6 +589,10 @@ sub add_filters(){
     my $content_string = get_request_body();
     my $content = from_json($content_string);
 
+    if(ref($content) ne 'ARRAY'){
+        $content = [$content];
+    }
+
     foreach my $filter (@{$content}){
 	my @criteria = ();
 	$criteria[0] = oct(${$filter}{'priority'});
