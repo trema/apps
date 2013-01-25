@@ -52,25 +52,30 @@ end
 class ShowSwitchFeatures < Controller
   def switch_ready datapath_id
     send_message datapath_id, DescStatsRequest.new
+    send_message datapath_id, TableStatsRequest.new
+    send_message datapath_id, FeaturesRequest.new
   end
 
 
   def stats_reply datapath_id, message
-    desc = message.stats.find do | each |
-      each.is_a?( DescStatsReply )
+    case message.type
+      when StatsReply::OFPST_DESC
+        message.stats.each do | each |
+          next unless each.is_a?( DescStatsReply )
+          info "Manufacturer description: #{ each.mfr_desc }"
+          info "Hardware description: #{ each.hw_desc }"
+          info "Software description: #{ each.sw_desc }"
+          info "Serial number: #{ each.serial_num }"
+          info "Human readable description of datapath: #{ each.dp_desc }"
+        end
+      when StatsReply::OFPST_TABLE
+        message.stats.each do | each |
+          next unless each.is_a?( TableStatsReply )
+          info "Table no: #{each.table_id} (#{each.name})"
+          info "  Max flows: #{each.max_entries}"
+          info "  Wildcards: #{each.wildcards.to_hex}"
+        end
     end
-    if desc.nil?
-      warn "No description statistics is avaliable."
-      shutdown!
-    end
-
-    info "Manufacturer description: #{ desc.mfr_desc }"
-    info "Hardware description: #{ desc.hw_desc }"
-    info "Software description: #{ desc.sw_desc }"
-    info "Serial number: #{ desc.serial_num }"
-    info "Human readable description of datapath: #{ desc.dp_desc }"
-
-    send_message datapath_id, FeaturesRequest.new
   end
 
 
