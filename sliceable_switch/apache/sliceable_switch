@@ -9,8 +9,8 @@ Listen 0.0.0.0:8888
     <Directory />
         Options FollowSymLinks
         AllowOverride None
-	Order deny,allow
-	Deny from all
+        Order deny,allow
+        Deny from all
     </Directory>
 
     <Directory /home/sliceable_switch/script/>
@@ -19,14 +19,19 @@ Listen 0.0.0.0:8888
         Script PUT /config.cgi
         Script POST /config.cgi
         Script DELETE /config.cgi
+        AllowOverride None
+        Order deny,allow
+        Deny from all
     </Directory>
 
     <Location ~ "/(networks|filters)">
         Order allow,deny
-	Allow from all
+        Allow from all
     </Location>
 
     RewriteEngine on
+    RewriteRule ^/tenants/[^/]*/networks(.*)$  /networks$1? [QSA,L]
+    RewriteRule ^/tenants/[^/]*/filters(.*)$  /filters$1? [QSA,L]
     RewriteRule ^/networks(.*)$ /networks$1? [QSA,L]
     RewriteRule ^/filters(.*)$ /filters$1? [QSA,L]
 
