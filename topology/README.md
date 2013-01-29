@@ -33,7 +33,7 @@ components:
 - `show_topology` retrieves topology information from the topology
   daemon and prints it as graph-easy or trema network DSL style.
 
-        $ TREMA_HOME=../../trema ./show_topology -G | graph-easy
+        $ trema run "./show_topology -G" | graph-easy
 
 How to build
 ------------
@@ -43,7 +43,7 @@ How to build
 License & Terms
 ---------------
 
-Copyright (C) 2008-2011 NEC Corporation
+Copyright (C) 2008-2013 NEC Corporation
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as
