@@ -16,16 +16,14 @@ list.
 How to build
 ------------
 
-  Build Trema
+  Get Trema and Apps
 
-        $ git clone git://github.com/trema/trema.git trema
+        $ sudo gem install trema
         $ git clone git://github.com/trema/apps.git apps
-        $ cd trema
-        $ ./build.rb
 
   Build Topology and Flow manager
 
-        $ cd ../apps/topology
+        $ cd apps/topology
         $ make
         $ cd ../flow_manager
         $ make
@@ -49,8 +47,7 @@ How to configure
 How to run
 ----------
 
-        $ cd ../../trema
-        $ sudo ./trema run -c ../apps/sliceable_switch/sliceable_switch.conf
+        $ sudo trema run -c ./sliceable_switch.conf
 
 How to enable REST-based configuration interface
 ------------------------------------------------
@@ -82,10 +79,14 @@ or Debian GNU/Linux.
         $ sudo chown -R www-data.www-data /home/sliceable_switch
         $ sudo /etc/init.d/apache2 reload
 
+  Run sliceable switch with REST-based interface
+
+        $ sudo trema run -c ./sliceable_switch_rest_null.conf
+
 License & Terms
 ---------------
 
-Copyright (C) 2008-2012 NEC Corporation
+Copyright (C) 2008-2013 NEC Corporation
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as
