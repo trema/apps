@@ -26,14 +26,8 @@ How to build
 
   Get Trema and Apps
 
-        $ git clone git://github.com/trema/trema.git trema
+        $ sudo gem install trema
         $ git clone git://github.com/trema/apps.git apps
-
-  Build Trema first
-
-        $ cd trema
-        $ ./build.rb
-        $ cd ..
 
   Build topology
 
@@ -50,8 +44,7 @@ How to build
 How to run
 ----------
 
-        $ cd trema
-        $ sudo ./trema run -c ../apps/routing_switch/routing_switch.conf
+        $ sudo trema run -c ./apps/routing_switch/routing_switch.conf
 
 License & Terms
 ---------------

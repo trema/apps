@@ -46,6 +46,26 @@ module Trema
       end
     end
   end
+
+
+  class DescStatsReply
+    def to_a
+      "Manufacturer description: #{ mfr_desc }\n" +
+      "Hardware description: #{ hw_desc }\n" +
+      "Software description: #{ sw_desc }\n" +
+      "Serial number: #{ serial_num }\n" +
+      "Human readable description of datapath: #{ dp_desc }"
+    end
+  end
+
+  
+  class TableStatsReply
+    def to_a
+      "Table no: #{ table_id } (#{ name })\n" +
+      "  Max flows: #{ max_entries }\n" +
+      "  Wildcards: #{ wildcards.to_hex }"
+    end
+  end
 end
 
 
@@ -58,23 +78,10 @@ class ShowSwitchFeatures < Controller
 
 
   def stats_reply datapath_id, message
-    case message.type
-      when StatsReply::OFPST_DESC
-        message.stats.each do | each |
-          next unless each.is_a?( DescStatsReply )
-          info "Manufacturer description: #{ each.mfr_desc }"
-          info "Hardware description: #{ each.hw_desc }"
-          info "Software description: #{ each.sw_desc }"
-          info "Serial number: #{ each.serial_num }"
-          info "Human readable description of datapath: #{ each.dp_desc }"
-        end
-      when StatsReply::OFPST_TABLE
-        message.stats.each do | each |
-          next unless each.is_a?( TableStatsReply )
-          info "Table no: #{each.table_id} (#{each.name})"
-          info "  Max flows: #{each.max_entries}"
-          info "  Wildcards: #{each.wildcards.to_hex}"
-        end
+    message.stats.each do | each |
+      if each.is_a?( DescStatsReply ) or each.is_a?( TableStatsReply )
+        info each.to_a
+      end
     end
   end
 
