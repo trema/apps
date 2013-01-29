@@ -62,7 +62,7 @@ How to build
 How to run examples
 -------------------
 
-    $ trema run ./flow_manager.conf -c ./flow_manager.conf -d
+    $ trema run ./flow_manager -c ./flow_manager.conf -d
     $ cd ./examples
     $ trema run ./example1
     $ trema run ./example2
