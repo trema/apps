@@ -27,6 +27,7 @@ Authors
 Please keep the list sorted.
 
 * Kazushi Sugyo
+* Kazuya Suzuki
 * Shuji Ishii
 * Lei Sun
 * Yasuhito Takamiya <yasuhito@gmail.com>

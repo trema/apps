@@ -21,24 +21,18 @@ How to build
 
   Get Trema and Apps
 
-        $ git clone git://github.com/trema/trema.git trema
+        $ sudo gem install trema
         $ git clone git://github.com/trema/apps.git apps
-
-  Build Trema first
-
-        $ cd trema
-        $ ./build.rb
-        $ cd ..
 
   Build topology
 
-        $ cd apps/topology
+        $ cd ./apps/topology
         $ make
         $ cd ../..
 
   Build redirectable routing switch and create authorized host database
 
-        $ cd apps/redirectable_routing_switch
+        $ cd ./apps/redirectable_routing_switch
         $ make
         $ ./create_authorized_host_db.sh
         $ sqlite3 ./authorized_host.db
@@ -49,18 +43,15 @@ How to build
         sqlite> insert into authorized_host values (2,"bob's PC");
         sqlite> .quit
 
-        $ cd ../..
-
 How to run
 ----------
 
-        $ cd trema
-        $ sudo ./trema run -c ../apps/redirectable_routing_switch/redirectable_routing_switch.conf
+        $ sudo trema run -c ./redirectable_routing_switch.conf
 
 License & Terms
 ---------------
 
-Copyright (C) 2008-2011 NEC Corporation
+Copyright (C) 2008-2013 NEC Corporation
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as

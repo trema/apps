@@ -27,14 +27,8 @@ How to build
 
   Get Trema and Apps
 
-        $ git clone git://github.com/trema/trema.git trema
+        $ sudo gem install trema
         $ git clone git://github.com/trema/apps.git apps
-
-  Build Trema
-
-        $ cd trema
-        $ ./build.rb
-        $ cd ..
 
 How to run
 ----------
@@ -45,17 +39,16 @@ How to run
 
   Learning switch
 
-        $ cd trema
-        $ sudo ./trema run -c ../apps/learning_switch_memcached/learning-switch.rb
+        $ sudo trema run -c ./apps/learning_switch_memcached/learning-switch.rb
 
   Forwarding database dumper
 
-        $ ../apps/learning_switch_memcached/fdb-dumper
+        $ ./apps/learning_switch_memcached/fdb-dumper
 
 License & Terms
 ---------------
 
-Copyright (C) 2008-2011 NEC Corporation
+Copyright (C) 2008-2013 NEC Corporation
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as
