@@ -23,7 +23,7 @@ How to build
 How to Run
 ------------
 
-  $ trema run ./show_description -c ./show_description.conf
+    $ trema run ./show_description -c ./show_description.conf
 
 License
 ------------
