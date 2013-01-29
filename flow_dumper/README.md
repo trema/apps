@@ -34,6 +34,7 @@ How to run
      $ trema run ./apps/flow_dumper/flow_dumper
 
   Or
+
      $ trema run ./apps/flow_dumper/flow-dumper.rb
 
   If you have any flow entries, you can see output like follows:
