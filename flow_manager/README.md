@@ -49,36 +49,33 @@ how to use the APIs.
 How to build
 ------------
 
-  Build Trema and slicesable routing switch
+  Get Trema and Apps
 
-        $ git clone git://github.com/trema/trema.git trema
+        $ sudo gem install trema
         $ git clone git://github.com/trema/apps.git apps
-        $ cd trema
-        $ ./build.rb
-        $ cd ../apps/flow_manager
 
   Build flow manager, libpath, and examples
 
+        $ cd ./apps/flow_manager
         $ make
 
 How to run examples
 -------------------
 
-    $ ./trema run -c ../apps/flow_manager/flow_manager.conf -d
-    $ export TREMA_HOME=`pwd`
-    $ cd ../apps/flow_manager/examples
-    $ ./example1
-    $ ./example2
-    $ ./example3
-    $ ./example4
-    $ ./example5
+    $ trema run ./flow_manager.conf -c ./flow_manager.conf -d
+    $ cd ./examples
+    $ trema run ./example1
+    $ trema run ./example2
+    $ trema run ./example3
+    $ trema run ./example4
+    $ trema run ./example5
 
 All examples show how to setup or teardown paths through libpath.
 
 License & Terms
 ---------------
 
-Copyright (C) 2011 NEC Corporation
+Copyright (C) 2011-2013 NEC Corporation
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as
