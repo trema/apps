@@ -179,9 +179,9 @@ sub list_slices(){
 	return 0;
     }
 
-    my $out = sprintf("%32s%32s\n", "ID", "Description");
+    my $out = sprintf("%32s\t%32s\n", "ID", "Description");
     foreach my $slice (@slices){
-	$out .= sprintf("%32s%32s\n", ${$slice}{'id'}, ${$slice}{'description'});
+	$out .= sprintf("%32s\t%32s\n", ${$slice}{'id'}, ${$slice}{'description'});
     }
 
     info($out);
