@@ -144,7 +144,7 @@ delete_notification( sw_entry *sw, port_entry *port ) {
 
 
 static void
-update_notification( sw_entry *sw, port_entry *port, const struct ofp_phy_port *phy_port ) {
+update_notification( sw_entry *sw, port_entry *port, const struct ofp_phy_port *phy_port, bool update ) {
   UNUSED( sw );
   UNUSED( port );
 
@@ -154,8 +154,10 @@ update_notification( sw_entry *sw, port_entry *port, const struct ofp_phy_port *
   }
 
   bool up = is_port_up( phy_port );
-  if ( port->up == up ) {
-    return;
+  if ( update ) {
+    if ( port->up == up ) {
+      return;
+    }
   }
   port->up = up;
   port->id = sw->id;
@@ -233,7 +235,7 @@ switch_features_reply( uint64_t datapath_id, uint32_t transaction_id,
     }
     port_entry *port = update_port_entry( sw, phy_port->port_no, phy_port->name );
     port->id = transaction_id;
-    update_notification( sw, port, phy_port );
+    update_notification( sw, port, phy_port, false );
     debug( "Updated features-reply from switch(%#" PRIx64 "), port_no(%u).",
            datapath_id, phy_port->port_no );
   }
@@ -290,7 +292,7 @@ port_status( uint64_t datapath_id, uint32_t transaction_id, uint8_t reason,
         delete_notification( sw, port );
         add_notification( sw, &phy_port );
       } else {
-        update_notification( sw, port, &phy_port );
+        update_notification( sw, port, &phy_port, true );
       }
       break;
     default:
