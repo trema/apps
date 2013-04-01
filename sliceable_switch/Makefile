@@ -28,6 +28,7 @@ FEATURES += port_port_mac_mixed_binding.feature mac_port_mac_mixed_binding.featu
 FEATURES += mac_binding_multiple_slices.feature port_binding_multiple_slices.feature
 FEATURES += mac_binding_65535_slices.feature
 FEATURES += switch_restart.feature
+FEATURES += set_reverse_flow.feature filter.feature
 
 LOGGING_LEVEL=info
 

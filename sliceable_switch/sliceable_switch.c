@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include "trema.h"
 #include "fdb.h"
+#include "icmp.h"
 #include "filter.h"
 #include "libpathresolver.h"
 #include "libtopology.h"
@@ -49,10 +50,11 @@ static const uint16_t DISCARD_PRIORITY = UINT16_MAX;
 
 typedef struct {
   uint16_t idle_timeout;
+  uint16_t mode;
   bool handle_arp_with_packetout;
+  bool setup_reverse_flow;
   char slice_db_file[ PATH_MAX ];
   char filter_db_file[ PATH_MAX ];
-  uint16_t mode;
 } switch_options;
 
 
@@ -144,6 +146,117 @@ handle_setup( int status, const path *p, void *user_data ) {
 }
 
 
+static bool
+packet_to_set_reverse_path( const buffer *packet ) {
+
+  if ( packet_type_ipv4_tcp( packet ) ) {
+    return true;
+  }
+  else if ( packet_type_ipv4_udp( packet ) ) {
+    return true;
+  }
+  else if ( packet_type_icmpv4( packet ) ) {
+    packet_info *pinfo = ( packet_info * ) packet->user_data;
+    if ( pinfo->icmpv4_type == ICMP_TYPE_ECHOREQ ) {
+      return true;
+    }
+  }
+  return false;
+} 
+
+
+static void
+set_ipv4_reverse_match( struct ofp_match *r, const struct ofp_match *match) {
+  memcpy( r, match, sizeof( struct ofp_match ) );
+
+  uint32_t clean_field = OFPFW_DL_SRC + OFPFW_DL_DST + OFPFW_TP_SRC + OFPFW_TP_DST + OFPFW_NW_SRC_MASK + OFPFW_NW_DST_MASK;
+  r->wildcards &= ( OFPFW_ALL - clean_field );
+  if ( match->wildcards & OFPFW_DL_DST ) {
+    r->wildcards |= OFPFW_DL_SRC;
+  }
+  if ( match->wildcards & OFPFW_DL_SRC ) {
+    r->wildcards |= OFPFW_DL_DST;
+  }
+  if ( match->wildcards & OFPFW_TP_DST ) {
+    r->wildcards |= OFPFW_TP_SRC;
+  }
+  if ( match->wildcards & OFPFW_TP_SRC ) {
+    r->wildcards |= OFPFW_TP_DST;
+  }
+  r->wildcards |= ( match->wildcards & OFPFW_NW_DST_MASK ) >> OFPFW_NW_DST_SHIFT << OFPFW_NW_SRC_SHIFT;
+  r->wildcards |= ( match->wildcards & OFPFW_NW_SRC_MASK ) >> OFPFW_NW_SRC_SHIFT << OFPFW_NW_DST_SHIFT;
+
+  memcpy( r->dl_src, match->dl_dst, OFP_ETH_ALEN );
+  memcpy( r->dl_dst, match->dl_src, OFP_ETH_ALEN );
+  r->nw_src = match->nw_dst;
+  r->nw_dst = match->nw_src;
+  switch ( match->nw_proto ) {
+  case IPPROTO_TCP:
+    r->tp_src = match->tp_dst;
+    r->tp_dst = match->tp_src;
+    break;
+  case IPPROTO_UDP:
+    r->tp_src = match->tp_dst;
+    r->tp_dst = match->tp_src;
+    break;
+  case IPPROTO_ICMP:
+    if ( match->icmp_type == ICMP_TYPE_ECHOREQ ) {
+      r->icmp_type = ICMP_TYPE_ECHOREP;
+      r->wildcards &= ( OFPFW_ALL - OFPFW_ICMP_TYPE );
+      r->wildcards |= OFPFW_ICMP_CODE; 
+    }
+    break;
+  default:
+    break;
+  }
+}
+
+
+static void
+setup_reverse_path( int status, const path *p, void *user_data ) {
+  assert(user_data);
+
+  packet_out_params *params = user_data;
+  if ( status != SETUP_SUCCEEDED ) {
+    error( "Failed to set up path ( status = %d ).", status );
+    output_packet( params->packet, params->out_datapath_id, params->out_port_no, params->out_vid );
+    free_buffer( params->packet );
+    xfree( params );
+    return;
+  }
+
+  struct ofp_match rmatch;
+  set_ipv4_reverse_match( &rmatch, &(p->match) );
+  path *reverse_path = create_path( rmatch, p->priority, p->idle_timeout, p->hard_timeout );
+  assert( reverse_path != NULL );
+  list_element *going_hop_list_element = p->hops;
+  dlist_element *returning_hop_dlist_element = create_dlist();
+  while ( going_hop_list_element != NULL ) {
+    hop *h = going_hop_list_element->data;
+    assert( h != NULL );
+    hop *reversed_hop = create_hop( h->datapath_id, h->out_port, h->in_port, NULL );
+    assert( reversed_hop != NULL );
+    returning_hop_dlist_element = insert_before_dlist( returning_hop_dlist_element, reversed_hop );
+    going_hop_list_element = going_hop_list_element->next;
+  }
+  while ( returning_hop_dlist_element != NULL && returning_hop_dlist_element->data != NULL ) {
+    hop *reversed_hop = returning_hop_dlist_element->data;
+    append_hop_to_path( reverse_path, reversed_hop );
+    returning_hop_dlist_element = returning_hop_dlist_element->next;
+  }
+  bool ret = setup_path( reverse_path, handle_setup, params, NULL, NULL );
+  if ( ret != true ) {
+    error( "Failed to set up reverse path." );
+    output_packet( params->packet, params->out_datapath_id, params->out_port_no, params->out_vid );
+    free_buffer( params->packet );
+    xfree( params );
+  }
+
+  delete_path( reverse_path );
+  delete_dlist( returning_hop_dlist_element );
+}
+
+
 static void
 discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet ) {
   const uint32_t wildcards = 0;
@@ -217,7 +330,13 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
   params->out_port_no = last_hop->out_port_no;
   params->out_vid = out_vid;
 
-  bool ret = setup_path( p, handle_setup, params, NULL, NULL );
+  bool ret;
+  if ( sliceable_switch->setup_reverse_flow && packet_to_set_reverse_path( packet ) ) {
+    ret = setup_path( p, setup_reverse_path, params, NULL, NULL );
+  }
+  else {
+    ret = setup_path( p, handle_setup, params, NULL, NULL );
+  }
   if ( ret != true ) {
     error( "Failed to set up path." );
     output_packet( packet, out_datapath_id, out_port, out_vid );
@@ -609,6 +728,7 @@ create_sliceable_switch( const char *topology_service, const switch_options *opt
   sliceable_switch *instance = xmalloc( sizeof( sliceable_switch ) );
   instance->idle_timeout = options->idle_timeout;
   instance->handle_arp_with_packetout = options->handle_arp_with_packetout;
+  instance->setup_reverse_flow = options->setup_reverse_flow;
   instance->switches = NULL;
   instance->fdb = NULL;
   instance->pathresolver = NULL;
@@ -684,7 +804,8 @@ static char option_description[] = "  -i, --idle_timeout=TIMEOUT      idle timeo
                                    "  -s, --slice_db=DB_FILE          slice database\n"
                                    "  -a, --filter_db=DB_FILE         filter database\n"
                                    "  -m, --loose                     enable loose mac-based slicing\n"
-                                   "  -r, --restrict_hosts            restrict hosts on switch port\n";
+                                   "  -r, --restrict_hosts            restrict hosts on switch port\n"
+                                   "  -u, --setup_reverse_flow        setup going and returning flows\n";
 static char short_options[] = "i:As:a:mr";
 static struct option long_options[] = {
   { "idle_timeout", required_argument, NULL, 'i' },
@@ -693,6 +814,7 @@ static struct option long_options[] = {
   { "filter_db", required_argument, NULL, 'a' },
   { "loose", no_argument, NULL, 'm' },
   { "restrict_hosts", no_argument, NULL, 'r' },
+  { "setup_reverse_flow", no_argument, NULL, 'u' },
   { NULL, 0, NULL, 0  },
 };
 
@@ -720,6 +842,7 @@ init_switch_options( switch_options *options, int *argc, char **argv[] ) {
   memset( options->slice_db_file, '\0', sizeof( options->slice_db_file ) );
   memset( options->filter_db_file, '\0', sizeof( options->filter_db_file ) );
   options->mode = 0;
+  options->setup_reverse_flow = false;
 
   int argc_tmp = *argc;
   char *new_argv[ *argc ];
@@ -770,6 +893,10 @@ init_switch_options( switch_options *options, int *argc, char **argv[] ) {
 
       case 'r':
         options->mode |= RESTRICT_HOSTS_ON_PORT;
+        break;
+
+      case 'u':
+        options->setup_reverse_flow = true;
         break;
 
       default:
