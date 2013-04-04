@@ -30,6 +30,7 @@
 typedef struct {
   uint16_t idle_timeout;
   bool handle_arp_with_packetout;
+  bool setup_reverse_flow;
   list_element *switches;
   hash_table *fdb;
   pathresolver *pathresolver;

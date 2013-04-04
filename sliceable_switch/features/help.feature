@@ -18,6 +18,7 @@ Feature: sliceable_switch help
         -a, --filter_db=DB_FILE         filter database
         -m, --loose                     enable loose mac-based slicing
         -r, --restrict_hosts            restrict hosts on switch port
+        -u, --setup_reverse_flow        setup going and returning flows
         -n, --name=SERVICE_NAME         service name
         -t, --topology=SERVICE_NAME     topology service name
         -d, --daemonize                 run in the background
@@ -40,6 +41,7 @@ Feature: sliceable_switch help
         -a, --filter_db=DB_FILE         filter database
         -m, --loose                     enable loose mac-based slicing
         -r, --restrict_hosts            restrict hosts on switch port
+        -u, --setup_reverse_flow        setup going and returning flows
         -n, --name=SERVICE_NAME         service name
         -t, --topology=SERVICE_NAME     topology service name
         -d, --daemonize                 run in the background
