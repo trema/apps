@@ -149,17 +149,13 @@ handle_setup( int status, const path *p, void *user_data ) {
 static bool
 packet_to_set_reverse_path( const buffer *packet ) {
 
-  if ( packet_type_ipv4_tcp( packet ) ) {
-    return true;
+  packet_info *pinfo = ( packet_info * ) packet->user_data;
+  if ( is_ether_multicast( pinfo->eth_macsa ) || is_ether_multicast( pinfo->eth_macda ) ) {
+    return false;
   }
-  else if ( packet_type_ipv4_udp( packet ) ) {
+
+  if ( packet_type_ipv4_tcp( packet ) || packet_type_ipv4_udp( packet ) || packet_type_icmpv4_echo_request( packet ) ) {
     return true;
-  }
-  else if ( packet_type_icmpv4( packet ) ) {
-    packet_info *pinfo = ( packet_info * ) packet->user_data;
-    if ( pinfo->icmpv4_type == ICMP_TYPE_ECHOREQ ) {
-      return true;
-    }
   }
   return false;
 } 
