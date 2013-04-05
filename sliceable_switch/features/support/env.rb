@@ -65,6 +65,16 @@ def filter_db_file
 end
 
 
+def config_cgi_file
+  File.join Trema.home, "tmp/config.cgi"
+end
+
+
+def rest_api_output
+  "tmp/rest_api_output"
+end
+
+
 def src_directory
   File.join( File.dirname( __FILE__ ), "..", ".." )
 end
@@ -133,6 +143,16 @@ def create_slice_table_from script
     File.delete slice_db_file
   end
   run "#{ script } | sqlite3 #{ slice_db_file }"
+end
+
+
+def deploy_config_cgi
+  File.open( File.join( src_directory, "config.cgi" ), "r" ) do | src |
+    File.open( config_cgi_file, "w" ) do | dst |
+      dst.write src.read.gsub( "/home/sliceable_switch/db", Trema.tmp )
+    end
+  end
+  File.chmod( 0755, config_cgi_file )
 end
 
 
