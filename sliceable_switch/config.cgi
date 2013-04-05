@@ -484,7 +484,7 @@ sub create_network(){
 
     my %created = ();
     $created{'id'} = $slice_id;
-    $created{'description'} = $description;
+    $created{'description'} = $description || "";
 
     reply_accepted_with_json(to_json(\%created));
 }
