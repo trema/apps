@@ -25,6 +25,20 @@ Given /^the REST interface for sliceable_switch$/ do
 end
 
 
+Given /^the following records were inserted into slices table$/ do | table |
+  table.hashes.each do | hash |
+    insert_slice_record hash
+  end
+end
+
+
+Given /^the following records were inserted into bindings table$/ do | table |
+  table.hashes.each do | hash |
+    insert_binding_record hash
+  end
+end
+
+
 def request_via_rest_if path, method="GET", req_body=""
   raise "unkown method #{ method }" if not method =~ /(GET|POST|PUT|DELETE)/
   raise "no request body" if method =~ /(POST|PUT)/ and req_body.empty?
@@ -73,6 +87,33 @@ end
 
 Then /^the response body shoud be like:$/ do | body_regx |
   response_body_from_rest_if.chomp.should =~ Regexp.new( body_regx )
+end
+
+
+Then /^the slice records shoud be:$/ do | table |
+  expected = table.hashes.map { | hash | "#{ hash[ 'number' ] }|#{ hash[ 'id' ] }|#{ hash[ 'description' ] }" }
+  show_slice_records.each_line do | line |
+    line.chomp.should == expected.shift
+  end
+end
+
+
+Then /^the slice records shoud be like:$/ do | table |
+  expected = table.hashes.map { | hash | "#{ hash[ 'number' ] }|#{ hash[ 'id' ] }|#{ hash[ 'description' ] }" }
+  show_slice_records.each_line do | line |
+    line.chomp.should =~ Regexp.new( expected.shift )
+  end
+end
+
+
+Then /^the binding records shoud be:$/ do | table |
+  expected = table.hashes.map { | hash | "#{ hash[ 'type' ] }|#{ hash[ 'datapath_id' ] }|" +
+                                         "#{ hash[ 'port' ] }|#{ hash[ 'vid' ] }|" +
+                                         "#{ hash[ 'mac' ] }|#{ hash[ 'id' ] }|" +
+                                         "#{ hash[ 'slice_number' ] }" }
+  show_binding_records.each_line do | line |
+    line.chomp.should == expected.shift
+  end
 end
 
 
