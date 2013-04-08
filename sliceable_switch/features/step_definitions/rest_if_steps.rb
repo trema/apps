@@ -95,6 +95,7 @@ Then /^the slice records shoud be:$/ do | table |
   show_slice_records.each_line do | line |
     line.chomp.should == expected.shift
   end
+  expected.count.should == 0
 end
 
 
@@ -103,6 +104,7 @@ Then /^the slice records shoud be like:$/ do | table |
   show_slice_records.each_line do | line |
     line.chomp.should =~ Regexp.new( expected.shift )
   end
+  expected.count.should == 0
 end
 
 
@@ -114,6 +116,7 @@ Then /^the binding records shoud be:$/ do | table |
   show_binding_records.each_line do | line |
     line.chomp.should == expected.shift
   end
+  expected.count.should == 0
 end
 
 
