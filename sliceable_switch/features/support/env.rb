@@ -146,6 +146,32 @@ def create_slice_table_from script
 end
 
 
+def show_slice_records
+  `sqlite3 #{ slice_db_file } 'select * from slices;'`
+end
+
+
+def show_binding_records
+  `sqlite3 #{ slice_db_file } 'select * from bindings;'`
+end
+
+
+def insert_slice_record hash
+  vals = [ hash[ 'number' ], "'#{ hash[ 'id' ] }'", "'#{ hash[ 'description' ] }'" ]
+  run "sqlite3 #{ slice_db_file } \"INSERT INTO 'slices' VALUES(#{ vals.join(',') });\""
+end
+
+
+def insert_binding_record hash
+  mac = hash[ 'mac' ].empty? ? "NULL" : hash[ 'mac' ]
+  datapath_id = hash[ 'datapath_id' ].empty? ? "NULL" : hash[ 'datapath_id' ]
+  port = hash[ 'port' ].empty? ? "NULL" : hash[ 'port' ]
+  vid = hash[ 'vid' ].empty? ? "NULL" : hash[ 'vid' ]
+  vals = [ hash[ 'type' ], datapath_id, port, vid, mac, "'#{ hash[ 'id' ] }'", hash[ 'slice_number' ] ]
+  run "sqlite3 #{ slice_db_file } \"INSERT INTO 'bindings' VALUES(#{ vals.join(',') });\""
+end
+
+
 def deploy_config_cgi
   File.open( File.join( src_directory, "config.cgi" ), "r" ) do | src |
     File.open( config_cgi_file, "w" ) do | dst |
