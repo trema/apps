@@ -156,6 +156,11 @@ def show_binding_records
 end
 
 
+def show_filter_records
+  `sqlite3 #{ filter_db_file } 'select * from filter;'`
+end
+
+
 def insert_slice_record hash
   vals = [ hash[ 'number' ], "'#{ hash[ 'id' ] }'", "'#{ hash[ 'description' ] }'" ]
   run "sqlite3 #{ slice_db_file } \"INSERT INTO 'slices' VALUES(#{ vals.join(',') });\""
@@ -169,6 +174,17 @@ def insert_binding_record hash
   vid = hash[ 'vid' ].empty? ? "NULL" : hash[ 'vid' ]
   vals = [ hash[ 'type' ], datapath_id, port, vid, mac, "'#{ hash[ 'id' ] }'", hash[ 'slice_number' ] ]
   run "sqlite3 #{ slice_db_file } \"INSERT INTO 'bindings' VALUES(#{ vals.join(',') });\""
+end
+
+
+def insert_filter_record hash
+  int_keys = [ 'priority', 'ofp_wildcards', 'in_port', 'dl_src', 'dl_dst', 'dl_vlan', 'dl_vlan_pcp',
+               'dl_type', 'nw_tos', 'nw_proto', 'nw_src', 'nw_dst', 'tp_src', 'tp_dst', 'wildcards',
+               'in_datapath_id', 'slice_number', 'action' ]
+  vals = []
+  int_keys.each { | key | vals.push( hash[ key ].to_i(0) ) }
+  vals.push( "'#{ hash[ 'id' ] }'" )
+  run "sqlite3 #{ filter_db_file } \"INSERT INTO 'filter' VALUES(#{ vals.join(',') });\""
 end
 
 
