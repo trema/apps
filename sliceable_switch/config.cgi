@@ -576,7 +576,12 @@ sub create_attachment_on_port(){
 
     $mac = mac_string_to_int($mac);
 
-    if($Slice->add_mac_on_port($binding_id, $slice_id, $port, $mac) < 0){
+    my $ret = $Slice->add_mac_on_port($binding_id, $slice_id, $port, $mac);
+    if($ret == Slice::NO_BINDING_FOUND){
+	reply_unprocessable_entity("Failed to create a binding (port not found).");
+	return;
+    }
+    elsif($ret < 0){
 	reply_error("Failed to add a mac-based binding on a port to '$slice_id'");
 	return;
     }
