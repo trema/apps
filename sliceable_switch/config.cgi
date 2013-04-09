@@ -600,22 +600,22 @@ sub add_filters(){
 
     foreach my $filter (@{$content}){
 	my @criteria = ();
-	$criteria[0] = oct(${$filter}{'priority'});
+	$criteria[0] = oct(${$filter}{'priority'}) if(defined(${$filter}{'priority'}));
 	$criteria[1] = ${$filter}{'ofp_wildcards'};
-	$criteria[2] = oct(${$filter}{'in_port'});
+	$criteria[2] = oct(${$filter}{'in_port'}) if(defined(${$filter}{'in_port'}));
 	$criteria[3] = ${$filter}{'dl_src'};
 	$criteria[4] = ${$filter}{'dl_dst'};
-	$criteria[5] = oct(${$filter}{'dl_vlan'});
-	$criteria[6] = oct(${$filter}{'dl_vlan_pcp'});
-	$criteria[7] = oct(${$filter}{'dl_type'});
-	$criteria[8] = oct(${$filter}{'nw_tos'});
-	$criteria[9] = oct(${$filter}{'nw_proto'});
+	$criteria[5] = oct(${$filter}{'dl_vlan'}) if(defined(${$filter}{'dl_vlan'}));
+	$criteria[6] = oct(${$filter}{'dl_vlan_pcp'}) if(defined(${$filter}{'dl_vlan_pcp'}));
+	$criteria[7] = oct(${$filter}{'dl_type'}) if(defined(${$filter}{'dl_type'}));
+	$criteria[8] = oct(${$filter}{'nw_tos'}) if(defined(${$filter}{'nw_tos'}));
+	$criteria[9] = oct(${$filter}{'nw_proto'}) if(defined(${$filter}{'nw_proto'}));
 	$criteria[10] = ${$filter}{'nw_src'};
 	$criteria[11] = ${$filter}{'nw_dst'};
-	$criteria[12] = oct(${$filter}{'tp_src'});
-	$criteria[13] = oct(${$filter}{'tp_dst'});
+	$criteria[12] = oct(${$filter}{'tp_src'}) if(defined(${$filter}{'tp_src'}));
+	$criteria[13] = oct(${$filter}{'tp_dst'}) if(defined(${$filter}{'tp_dst'}));
 	$criteria[14] = ${$filter}{'wildcards'};
-	$criteria[15] = oct(${$filter}{'in_datapath_id'});
+	$criteria[15] = oct(${$filter}{'in_datapath_id'}) if(defined(${$filter}{'in_datapath_id'}));
 	$criteria[16] = ${$filter}{'slice'};
 	$criteria[17] = ${$filter}{'action'};
 	my $id = ${$filter}{'id'};
