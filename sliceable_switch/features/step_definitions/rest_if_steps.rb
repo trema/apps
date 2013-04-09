@@ -39,6 +39,13 @@ Given /^the following records were inserted into bindings table$/ do | table |
 end
 
 
+Given /^the following records were inserted into filter table$/ do | table |
+  table.hashes.each do | hash |
+    insert_filter_record hash
+  end
+end
+
+
 def request_via_rest_if path, method="GET", req_body=""
   raise "unkown method #{ method }" if not method =~ /(GET|POST|PUT|DELETE)/
   raise "no request body" if method =~ /(POST|PUT)/ and req_body.empty?
@@ -114,6 +121,21 @@ Then /^the binding records shoud be:$/ do | table |
                                          "#{ hash[ 'mac' ] }|#{ hash[ 'id' ] }|" +
                                          "#{ hash[ 'slice_number' ] }" }
   show_binding_records.each_line do | line |
+    line.chomp.should == expected.shift
+  end
+  expected.count.should == 0
+end
+
+
+Then /^the filter records shoud be:$/ do | table |
+  int_keys = [ 'priority', 'ofp_wildcards', 'in_port', 'dl_src', 'dl_dst', 'dl_vlan', 'dl_vlan_pcp',
+               'dl_type', 'nw_tos', 'nw_proto', 'nw_src', 'nw_dst', 'tp_src', 'tp_dst', 'wildcards',
+               'in_datapath_id', 'slice_number', 'action' ]
+  expected = table.hashes.map do | hash |
+                                vals = int_keys.each.inject( [] ) { | vals, key | vals.push( hash[ key ].to_i(0) ) }
+                                vals.push( hash[ 'id' ] ).join('|')
+                              end
+  show_filter_records.each_line do | line |
     line.chomp.should == expected.shift
   end
   expected.count.should == 0
