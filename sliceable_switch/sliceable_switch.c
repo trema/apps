@@ -210,18 +210,17 @@ set_ipv4_reverse_match( struct ofp_match *r, const struct ofp_match *match) {
 
 static openflow_actions *
 create_openflow_actions_to_update_vid( uint16_t in_vid, uint16_t out_vid ) {
-  openflow_actions *vlan_actions = NULL;
-
-  if ( in_vid != VLAN_NONE || out_vid != VLAN_NONE ) {
-    vlan_actions = create_actions();
-    if ( out_vid == VLAN_NONE ) {
-      append_action_strip_vlan( vlan_actions );
-    }
-    else {
-      append_action_set_vlan_vid( vlan_actions, out_vid );
-    }
+  if ( in_vid == out_vid ) {
+    return NULL;
   }
 
+  openflow_actions *vlan_actions = create_actions();
+  if ( out_vid == VLAN_NONE ) {
+    append_action_strip_vlan( vlan_actions );
+  }
+  else {
+    append_action_set_vlan_vid( vlan_actions, out_vid );
+  }
   return vlan_actions;
 }
 
