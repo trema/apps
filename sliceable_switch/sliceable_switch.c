@@ -78,6 +78,7 @@ typedef struct packet_out_params {
   uint64_t out_datapath_id;
   uint16_t out_port_no;
   uint16_t out_vid;
+  uint16_t in_vid;
 } packet_out_params;
 
 
@@ -208,6 +209,23 @@ set_ipv4_reverse_match( struct ofp_match *r, const struct ofp_match *match) {
 }
 
 
+static openflow_actions *
+create_openflow_actions_to_update_vid( uint16_t in_vid, uint16_t out_vid ) {
+  if ( in_vid == out_vid ) {
+    return NULL;
+  }
+
+  openflow_actions *vlan_actions = create_actions();
+  if ( out_vid == VLAN_NONE ) {
+    append_action_strip_vlan( vlan_actions );
+  }
+  else {
+    append_action_set_vlan_vid( vlan_actions, out_vid );
+  }
+  return vlan_actions;
+}
+
+
 static void
 setup_reverse_path( int status, const path *p, void *user_data ) {
   assert(user_data);
@@ -223,6 +241,11 @@ setup_reverse_path( int status, const path *p, void *user_data ) {
 
   struct ofp_match rmatch;
   set_ipv4_reverse_match( &rmatch, &(p->match) );
+  rmatch.dl_vlan = params->out_vid;
+
+  openflow_actions *vlan_actions;
+  vlan_actions = create_openflow_actions_to_update_vid( params->out_vid, params->in_vid );
+
   path *reverse_path = create_path( rmatch, p->priority, p->idle_timeout, p->hard_timeout );
   assert( reverse_path != NULL );
   list_element *going_hop_list_element = p->hops;
@@ -230,7 +253,11 @@ setup_reverse_path( int status, const path *p, void *user_data ) {
   while ( going_hop_list_element != NULL ) {
     hop *h = going_hop_list_element->data;
     assert( h != NULL );
-    hop *reversed_hop = create_hop( h->datapath_id, h->out_port, h->in_port, NULL );
+    hop *reversed_hop = create_hop( h->datapath_id, h->out_port, h->in_port, vlan_actions );
+    if ( vlan_actions ) {
+      delete_actions( vlan_actions );
+      vlan_actions = NULL;
+    }
     assert( reversed_hop != NULL );
     returning_hop_dlist_element = insert_before_dlist( returning_hop_dlist_element, reversed_hop );
     going_hop_list_element = going_hop_list_element->next;
@@ -311,12 +338,20 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
   const uint16_t hard_timeout = 0;
   path *p = create_path( match, PRIORITY, sliceable_switch->idle_timeout, hard_timeout );
   assert( p != NULL );
+  openflow_actions *vlan_actions = create_openflow_actions_to_update_vid( in_vid, out_vid );
   for ( dlist_element *e = get_first_element( hops ); e != NULL; e = e->next ) {
     pathresolver_hop *rh = e->data;
-    hop *h = create_hop( rh->dpid, rh->in_port_no, rh->out_port_no, NULL );
+    openflow_actions *actions = NULL;
+    if ( e->next == NULL ) {
+      actions = vlan_actions;
+    }
+    hop *h = create_hop( rh->dpid, rh->in_port_no, rh->out_port_no, actions );
     assert( h != NULL );
     append_hop_to_path( p, h );
   } // for(;;)
+  if ( vlan_actions ) {
+    delete_actions( vlan_actions );
+  }
 
   dlist_element *e = get_last_element( hops );
   pathresolver_hop *last_hop = e->data;
@@ -325,6 +360,7 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
   params->out_datapath_id = last_hop->dpid;
   params->out_port_no = last_hop->out_port_no;
   params->out_vid = out_vid;
+  params->in_vid = in_vid;
 
   bool ret;
   if ( sliceable_switch->setup_reverse_flow && packet_to_set_reverse_path( packet ) ) {

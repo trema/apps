@@ -30,6 +30,7 @@ FEATURES += mac_binding_65535_slices.feature
 FEATURES += switch_restart.feature
 FEATURES += set_reverse_flow.feature filter.feature
 FEATURES += rest_if_networks.feature rest_if_ports.feature rest_if_filters.feature
+FEATURES += vlan_mod.feature
 
 LOGGING_LEVEL=info
 
