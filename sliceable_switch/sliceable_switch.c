@@ -78,6 +78,7 @@ typedef struct packet_out_params {
   uint64_t out_datapath_id;
   uint16_t out_port_no;
   uint16_t out_vid;
+  uint16_t in_vid;
 } packet_out_params;
 
 
@@ -243,7 +244,7 @@ setup_reverse_path( int status, const path *p, void *user_data ) {
   rmatch.dl_vlan = params->out_vid;
 
   openflow_actions *vlan_actions;
-  vlan_actions = create_openflow_actions_to_update_vid( params->out_vid, p->match.dl_vlan );
+  vlan_actions = create_openflow_actions_to_update_vid( params->out_vid, params->in_vid );
 
   path *reverse_path = create_path( rmatch, p->priority, p->idle_timeout, p->hard_timeout );
   assert( reverse_path != NULL );
@@ -359,6 +360,7 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
   params->out_datapath_id = last_hop->dpid;
   params->out_port_no = last_hop->out_port_no;
   params->out_vid = out_vid;
+  params->in_vid = in_vid;
 
   bool ret;
   if ( sliceable_switch->setup_reverse_flow && packet_to_set_reverse_path( packet ) ) {
