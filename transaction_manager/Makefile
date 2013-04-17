@@ -22,16 +22,18 @@ OBJS = $(SRCS:.c=.o)
 
 TARGET = $(LIB)
 
+EXAMPLES = examples
+
 DEPENDS = .depends
 
-.PHONY: all depend clean
+.PHONY: all depend clean examples
 
 .SUFFIXES: .c .o
 
-all: depend $(TARGET)
+all: depend $(TARGET) examples
 
 $(TARGET): $(OBJS)
-	$(AR) -cq $@ $(OBJS_LIB)
+	$(AR) -cq $@ $(OBJS)
 	$(RANLIB) $@
 
 .c.o:
@@ -42,5 +44,8 @@ depend:
 
 clean:
 	@rm -rf $(DEPENDS) $(OBJS) $(TARGET) *~
+
+examples:
+	cd $(EXAMPLES) && $(MAKE)
 
 -include $(DEPENDS)
