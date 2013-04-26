@@ -555,6 +555,25 @@ load_slice_definitions_from_sqlite( void *user_data ) {
 
   last_slice_db_mtime = st.st_mtime;
 
+  ret = sqlite3_open( slice_db_file, &db );
+  if ( ret != SQLITE_OK ) {
+    error( "Failed to load slice (%s).", sqlite3_errmsg( db ) );
+    sqlite3_close( db );
+    return;
+  }
+  ret = sqlite3_busy_timeout( db, 100 );
+  if ( ret != SQLITE_OK ) {
+    error( "Failed to set a busy timeout of filter database (%s).", sqlite3_errmsg( db ) );
+    sqlite3_close( db );
+    return;
+  }
+  ret = sqlite3_exec( db, "BEGIN TRANSACTION;", NULL, NULL, NULL );
+  if ( ret != SQLITE_OK ) {
+    error( "Failed to execute 'BEGIN TRANSACTION' (%s).", sqlite3_errmsg( db ) );
+    sqlite3_close( db );
+    return;
+  }
+
   delete_slice_db();
 
   // FIXME: delete affected entries only
@@ -562,27 +581,23 @@ load_slice_definitions_from_sqlite( void *user_data ) {
 
   create_slice_db();
 
-  ret = sqlite3_open( slice_db_file, &db );
-  if ( ret ) {
-    error( "Failed to load slice (%s).", sqlite3_errmsg( db ) );
-    sqlite3_close( db );
-    return;
-  }
 
   ret = sqlite3_exec( db, "select * from slices",
                       add_slice_entry_from_sqlite, 0, NULL );
-  if ( ret != SQLITE_OK ) {
+  if ( ret == SQLITE_OK ) {
+    ret = sqlite3_exec( db, "select * from bindings",
+                        add_binding_entry_from_sqlite, 0, NULL );
+    if ( ret != SQLITE_OK ) {
+      error( "Failed to execute a SQL statement (%s).", sqlite3_errmsg( db ) );
+    }
+  }
+  else {
     error( "Failed to execute a SQL statement (%s).", sqlite3_errmsg( db ) );
-    sqlite3_close( db );
-    return;
   }
 
-  ret = sqlite3_exec( db, "select * from bindings",
-                      add_binding_entry_from_sqlite, 0, NULL );
+  ret = sqlite3_exec( db, "END TRANSACTION;", NULL, NULL, NULL );
   if ( ret != SQLITE_OK ) {
-    error( "Failed to execute a SQL statement (%s).", sqlite3_errmsg( db ) );
-    sqlite3_close( db );
-    return;
+    error( "Failed to execute 'END TRANSACTION' (%s).", sqlite3_errmsg( db ) );
   }
 
   sqlite3_close( db );

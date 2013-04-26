@@ -54,6 +54,8 @@ sub new(){
     if(!defined($hash->{'dbh'})){
 	return undef;
     }
+    $hash->{'dbh'}->sqlite_busy_timeout(100);
+    $hash->{'dbh'}->do("PRAGMA synchronous=OFF");
 
     bless($hash, $class);
 }

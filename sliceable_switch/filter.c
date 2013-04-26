@@ -383,22 +383,37 @@ load_filter_entries_from_sqlite( void *user_data ) {
 
   last_filter_db_mtime = st.st_mtime;
 
-  delete_filter_db();
-  create_filter_db();
-
   ret = sqlite3_open( filter_db_file, &db );
-  if ( ret ) {
+  if ( ret != SQLITE_OK ) {
     error( "Failed to load filter database (%s).", sqlite3_errmsg( db ) );
     sqlite3_close( db );
     return;
   }
+  ret = sqlite3_busy_timeout( db, 100 );
+  if ( ret != SQLITE_OK ) {
+    error( "Failed to set a busy timeout of filter database (%s).", sqlite3_errmsg( db ) );
+    sqlite3_close( db );
+    return;
+  }
+  ret = sqlite3_exec( db, "BEGIN TRANSACTION;", NULL, NULL, NULL );
+  if ( ret != SQLITE_OK ) {
+    error( "Failed to execute 'BEGIN TRANSACTION' (%s).", sqlite3_errmsg( db ) );
+    sqlite3_close( db );
+    return;
+  }
+
+  delete_filter_db();
+  create_filter_db();
 
   ret = sqlite3_exec( db, "select * from filter order by priority",
                       add_filter_entry_from_sqlite, 0, NULL );
   if ( ret != SQLITE_OK ) {
     error( "Failed to execute a SQL statement (%s).", sqlite3_errmsg( db ) );
-    sqlite3_close( db );
-    return;
+  }
+
+  ret = sqlite3_exec( db, "END TRANSACTION;", NULL, NULL, NULL );
+  if ( ret != SQLITE_OK ) {
+    error( "Failed to execute 'END TRANSACTION' (%s).", sqlite3_errmsg( db ) );
   }
 
   sqlite3_close( db );
