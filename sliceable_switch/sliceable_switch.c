@@ -247,28 +247,27 @@ setup_reverse_path( int status, const path *p, void *user_data ) {
   openflow_actions *vlan_actions;
   vlan_actions = create_openflow_actions_to_update_vid( params->out_vid, params->in_vid );
 
-  path *reverse_path = create_path( rmatch, p->priority, p->idle_timeout, p->hard_timeout );
-  assert( reverse_path != NULL );
-  list_element *going_hop_list_element = p->hops;
-  dlist_element *returning_hop_dlist_element = create_dlist();
-  while ( going_hop_list_element != NULL ) {
-    hop *h = going_hop_list_element->data;
+  path *rpath = create_path( rmatch, p->priority, p->idle_timeout, p->hard_timeout );
+  assert( rpath != NULL );
+  list_element *hops = p->hops;
+  dlist_element *rhops = create_dlist();
+  while ( hops != NULL ) {
+    hop *h = hops->data;
     assert( h != NULL );
-    hop *reversed_hop = create_hop( h->datapath_id, h->out_port, h->in_port, vlan_actions );
+    hop *rh = create_hop( h->datapath_id, h->out_port, h->in_port, vlan_actions );
     if ( vlan_actions ) {
       delete_actions( vlan_actions );
       vlan_actions = NULL;
     }
-    assert( reversed_hop != NULL );
-    returning_hop_dlist_element = insert_before_dlist( returning_hop_dlist_element, reversed_hop );
-    going_hop_list_element = going_hop_list_element->next;
+    assert( rh != NULL );
+    rhops = insert_before_dlist( rhops, rh );
+    hops = hops->next;
   }
-  while ( returning_hop_dlist_element != NULL && returning_hop_dlist_element->data != NULL ) {
-    hop *reversed_hop = returning_hop_dlist_element->data;
-    append_hop_to_path( reverse_path, reversed_hop );
-    returning_hop_dlist_element = returning_hop_dlist_element->next;
+  while ( rhops != NULL && rhops->data != NULL ) {
+    append_hop_to_path( rpath, ( hop * ) rhops->data );
+    rhops = rhops->next;
   }
-  bool ret = setup_path( reverse_path, handle_setup, params, NULL, NULL );
+  bool ret = setup_path( rpath, handle_setup, params, NULL, NULL );
   if ( ret != true ) {
     error( "Failed to set up reverse path." );
     output_packet( params->packet, params->out_datapath_id, params->out_port_no, params->out_vid );
@@ -276,8 +275,8 @@ setup_reverse_path( int status, const path *p, void *user_data ) {
     xfree( params );
   }
 
-  delete_path( reverse_path );
-  delete_dlist( returning_hop_dlist_element );
+  delete_path( rpath );
+  delete_dlist( rhops );
 }
 
 
