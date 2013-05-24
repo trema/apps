@@ -43,7 +43,8 @@
 
 
 static const uint16_t FLOW_TIMER = 60;
-static const uint16_t PACKET_IN_DISCARD_DURATION = 1;
+static const uint16_t DISCARD_DURATION_DENY = 60;
+static const uint16_t DISCARD_DURATION_NO_PATH = 1;
 static const uint16_t PRIORITY = UINT16_MAX;
 static const uint16_t DISCARD_PRIORITY = UINT16_MAX;
 
@@ -281,7 +282,7 @@ setup_reverse_path( int status, const path *p, void *user_data ) {
 
 
 static void
-discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet ) {
+discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet, const uint16_t hard_timeout ) {
   const uint32_t wildcards = 0;
   struct ofp_match match;
   set_match_from_packet( &match, in_port, wildcards, packet );
@@ -289,7 +290,6 @@ discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet 
   match_to_string( &match, match_str, sizeof( match_str ) );
 
   const uint16_t idle_timeout = 0;
-  const uint16_t hard_timeout = PACKET_IN_DISCARD_DURATION;
   const uint32_t buffer_id = UINT32_MAX;
   const uint16_t flags = 0;
 
@@ -313,7 +313,7 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
   if ( hops == NULL ) {
     warn( "No available path found ( %#" PRIx64 ":%u -> %#" PRIx64 ":%u ).",
           in_datapath_id, in_port, out_datapath_id, out_port );
-    discard_packet_in( in_datapath_id, in_port, packet );
+    discard_packet_in( in_datapath_id, in_port, packet, DISCARD_DURATION_NO_PATH );
     return;
   }
 
@@ -630,12 +630,7 @@ allow:
 deny:
   {
     // Drop packets for a certain period
-    buffer *flow_mod = create_flow_mod( transaction_id, match, get_cookie(),
-                                        OFPFC_ADD, 0, FLOW_TIMER,
-                                        UINT16_MAX, UINT32_MAX,
-                                        OFPP_NONE, 0, NULL );
-    send_openflow_message( datapath_id, flow_mod );
-    free_buffer( flow_mod );
+    discard_packet_in( datapath_id, in_port, data, DISCARD_DURATION_DENY );
     return;
   }
 
