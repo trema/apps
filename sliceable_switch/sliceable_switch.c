@@ -43,7 +43,8 @@
 
 
 static const uint16_t FLOW_TIMER = 60;
-static const uint16_t PACKET_IN_DISCARD_DURATION = 1;
+static const uint16_t DISCARD_DURATION_DENY = 60;
+static const uint16_t DISCARD_DURATION_NO_PATH = 1;
 static const uint16_t PRIORITY = UINT16_MAX;
 static const uint16_t DISCARD_PRIORITY = UINT16_MAX;
 
@@ -246,28 +247,27 @@ setup_reverse_path( int status, const path *p, void *user_data ) {
   openflow_actions *vlan_actions;
   vlan_actions = create_openflow_actions_to_update_vid( params->out_vid, params->in_vid );
 
-  path *reverse_path = create_path( rmatch, p->priority, p->idle_timeout, p->hard_timeout );
-  assert( reverse_path != NULL );
-  list_element *going_hop_list_element = p->hops;
-  dlist_element *returning_hop_dlist_element = create_dlist();
-  while ( going_hop_list_element != NULL ) {
-    hop *h = going_hop_list_element->data;
+  path *rpath = create_path( rmatch, p->priority, p->idle_timeout, p->hard_timeout );
+  assert( rpath != NULL );
+  list_element *hops = p->hops;
+  dlist_element *rhops = create_dlist();
+  while ( hops != NULL ) {
+    hop *h = hops->data;
     assert( h != NULL );
-    hop *reversed_hop = create_hop( h->datapath_id, h->out_port, h->in_port, vlan_actions );
+    hop *rh = create_hop( h->datapath_id, h->out_port, h->in_port, vlan_actions );
     if ( vlan_actions ) {
       delete_actions( vlan_actions );
       vlan_actions = NULL;
     }
-    assert( reversed_hop != NULL );
-    returning_hop_dlist_element = insert_before_dlist( returning_hop_dlist_element, reversed_hop );
-    going_hop_list_element = going_hop_list_element->next;
+    assert( rh != NULL );
+    rhops = insert_before_dlist( rhops, rh );
+    hops = hops->next;
   }
-  while ( returning_hop_dlist_element != NULL && returning_hop_dlist_element->data != NULL ) {
-    hop *reversed_hop = returning_hop_dlist_element->data;
-    append_hop_to_path( reverse_path, reversed_hop );
-    returning_hop_dlist_element = returning_hop_dlist_element->next;
+  while ( rhops != NULL && rhops->data != NULL ) {
+    append_hop_to_path( rpath, ( hop * ) rhops->data );
+    rhops = rhops->next;
   }
-  bool ret = setup_path( reverse_path, handle_setup, params, NULL, NULL );
+  bool ret = setup_path( rpath, handle_setup, params, NULL, NULL );
   if ( ret != true ) {
     error( "Failed to set up reverse path." );
     output_packet( params->packet, params->out_datapath_id, params->out_port_no, params->out_vid );
@@ -275,13 +275,13 @@ setup_reverse_path( int status, const path *p, void *user_data ) {
     xfree( params );
   }
 
-  delete_path( reverse_path );
-  delete_dlist( returning_hop_dlist_element );
+  delete_path( rpath );
+  delete_dlist( rhops );
 }
 
 
 static void
-discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet ) {
+discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet, const uint16_t hard_timeout ) {
   const uint32_t wildcards = 0;
   struct ofp_match match;
   set_match_from_packet( &match, in_port, wildcards, packet );
@@ -289,7 +289,6 @@ discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet 
   match_to_string( &match, match_str, sizeof( match_str ) );
 
   const uint16_t idle_timeout = 0;
-  const uint16_t hard_timeout = PACKET_IN_DISCARD_DURATION;
   const uint32_t buffer_id = UINT32_MAX;
   const uint16_t flags = 0;
 
@@ -313,7 +312,7 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
   if ( hops == NULL ) {
     warn( "No available path found ( %#" PRIx64 ":%u -> %#" PRIx64 ":%u ).",
           in_datapath_id, in_port, out_datapath_id, out_port );
-    discard_packet_in( in_datapath_id, in_port, packet );
+    discard_packet_in( in_datapath_id, in_port, packet, DISCARD_DURATION_NO_PATH );
     return;
   }
 
@@ -630,12 +629,7 @@ allow:
 deny:
   {
     // Drop packets for a certain period
-    buffer *flow_mod = create_flow_mod( transaction_id, match, get_cookie(),
-                                        OFPFC_ADD, 0, FLOW_TIMER,
-                                        UINT16_MAX, UINT32_MAX,
-                                        OFPP_NONE, 0, NULL );
-    send_openflow_message( datapath_id, flow_mod );
-    free_buffer( flow_mod );
+    discard_packet_in( datapath_id, in_port, data, DISCARD_DURATION_DENY );
     return;
   }
 
@@ -838,7 +832,7 @@ static char option_description[] = "  -i, --idle_timeout=TIMEOUT      idle timeo
                                    "  -m, --loose                     enable loose mac-based slicing\n"
                                    "  -r, --restrict_hosts            restrict hosts on switch port\n"
                                    "  -u, --setup_reverse_flow        setup going and returning flows\n";
-static char short_options[] = "i:As:a:mr";
+static char short_options[] = "i:As:a:mru";
 static struct option long_options[] = {
   { "idle_timeout", required_argument, NULL, 'i' },
   { "handle_arp_with_packetout", 0, NULL, 'A' },
