@@ -833,7 +833,7 @@ static char option_description[] = "  -i, --idle_timeout=TIMEOUT      idle timeo
                                    "  -m, --loose                     enable loose mac-based slicing\n"
                                    "  -r, --restrict_hosts            restrict hosts on switch port\n"
                                    "  -u, --setup_reverse_flow        setup going and returning flows\n";
-static char short_options[] = "i:As:a:mr";
+static char short_options[] = "i:As:a:mru";
 static struct option long_options[] = {
   { "idle_timeout", required_argument, NULL, 'i' },
   { "handle_arp_with_packetout", 0, NULL, 'A' },
