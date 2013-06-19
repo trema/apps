@@ -21,10 +21,6 @@
 #ifndef SIMPLE_RESTAPI_MANAGER_H
 #define SIMPLE_RESTAPI_MANAGER_H
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
-
 #include "trema.h"
 
 
@@ -51,10 +47,6 @@ bool delete_restapi_url();
 bool init_restapi_manager();
 bool finalize_restapi_manager();
 
-
-#ifdef	__cplusplus
-}
-#endif
 
 #endif // SIMPLE_RESTAPI_MANAGER_H
 

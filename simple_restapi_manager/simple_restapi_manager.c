@@ -28,18 +28,16 @@
 #include <jansson.h>
 #include <regex.h>
 
-#include "mongoose.h"
 #include "librestapi.h"
 #include "simple_restapi_manager.h"
 #include "trema.h"
-
 
 /* This variable is for putting the url mapping data into here */
 url_mapping_table url_mapping_db = { NULL };
 const char *options[] = {"listening_ports", "8080", NULL};
 
-struct mg_context *ctx = NULL;
-struct mg_callbacks callbacks;
+static struct mg_context *ctx = NULL;
+static struct mg_callbacks callbacks;
 
 /*_________________---------------------------__________________
   _________________   mongoose callback       __________________
@@ -63,6 +61,8 @@ static int *mongoose_callback( struct mg_connection *conn )
       /* Compare the string with regex */
       reti = regexec( &url_mapping_data->regex, request_info->uri , 0, NULL, 0 );
       
+      printf( "URI:%s, %s\n", request_info->uri, url_mapping_data->url_pattern_key );
+      
       if( !reti ){ /* Match */
         if( strcmp( request_info->request_method , url_mapping_data->method ) == 0 ) { //Match the REST API
           printf( "REST API found \n" );
@@ -70,6 +70,7 @@ static int *mongoose_callback( struct mg_connection *conn )
         }
         else {
           ret_strings = "";
+          printf( "REST API not found \n" );
         }
       }
     }
@@ -94,7 +95,7 @@ static int *mongoose_callback( struct mg_connection *conn )
 
 bool start_restapi_manager() {
   /* Start mongoose web server */
-  ctx = mg_start(&mongoose_callback, NULL, options);
+  ctx = mg_start(&callbacks, NULL, options);
   return true;
 }
 
@@ -115,9 +116,6 @@ bool delete_restapi_url(){
 
 
 bool init_restapi_manager() {
-    
-  if ( ctx != NULL )
-      return false; // has initialized already
  
   /* Prepare callbacks structure. 
    * We have only one callback, the rest are NULL.

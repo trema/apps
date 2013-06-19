@@ -24,7 +24,7 @@
  */
 static char* 
 process_default_callback( const struct mg_request_info *request_info, void *request_data ) {
-  return "<html>OK</html>";
+  return "OK";
 }
 
 /* ===================== Starts with manage url_mapping ======================== */
@@ -51,7 +51,6 @@ lookup_url_mapping_by_match( url_mapping_table *mapping_db, char *url_key ) {
 url_mapping *
 allocate_url_mapping( void ) {
   url_mapping *ret = malloc( sizeof( url_mapping ) );
-  memset( "\0", ret->method, sizeof( ret->method ) );
   ret->url_pattern_key = NULL;
   ret->restapi_requested_callback = NULL;
   

@@ -24,9 +24,6 @@
 #include "simple_restapi_manager.h"
 
 
-
-
-
 static void
 handle_switch_ready( uint64_t datapath_id, void *user_data ) {
   UNUSED( user_data );
@@ -39,6 +36,7 @@ handle_switch_ready( uint64_t datapath_id, void *user_data ) {
 
 int
 main( int argc, char *argv[] ) {
+  
   // Initialize the Trema world
   init_trema( &argc, &argv );
 
@@ -46,8 +44,9 @@ main( int argc, char *argv[] ) {
   init_restapi_manager();
   
   // Start restapi manager
-  //start_restapi_manager();
-
+  start_restapi_manager();
+  //set_external_callback( start_restapi_manager );
+  
   // Set switch ready handler
   set_switch_ready_handler( handle_switch_ready, NULL );
 
