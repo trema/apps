@@ -1,6 +1,5 @@
 /*
  * Author: TeYen Liu 
- *         teyen.liu@gmail.com
  *
  * Copyright (C) 2012-2013 NEC Corporation
  *
@@ -47,7 +46,7 @@ static int *mongoose_callback( struct mg_connection *conn )
 {
   const struct mg_request_info *request_info = mg_get_request_info(conn); 
    
-    char *ret_strings = NULL;
+    char *ret_strings = "";
     
     /* Iterate all the url_mapping data */
     hash_iterator iter;
@@ -61,25 +60,25 @@ static int *mongoose_callback( struct mg_connection *conn )
       /* Compare the string with regex */
       reti = regexec( &url_mapping_data->regex, request_info->uri , 0, NULL, 0 );
       
-      printf( "URI:%s, %s\n", request_info->uri, url_mapping_data->url_pattern_key );
-      
-      if( !reti ){ /* Match */
-        if( strcmp( request_info->request_method , url_mapping_data->method ) == 0 ) { //Match the REST API
-          printf( "REST API found \n" );
+      if( !reti ){ 
+        /* Match the URI */
+        if( strcmp( request_info->request_method , 
+                url_mapping_data->method ) == 0 ) { 
+          /* Match the REST API */
           ret_strings = ( *url_mapping_data->restapi_requested_callback )( request_info, NULL );
         }
         else {
-          ret_strings = "";
-          printf( "REST API not found \n" );
+          info( "REST API not found \n" );
         }
       }
     }
     
-    int ret_length = strlen( ret_strings );
-    char content[ ret_length + 1024 ];
-    int content_length = snprintf(content, sizeof(content),
-                                  "Hello from mongoose! Remote port: %d, content:%s\n",
-                                  request_info->remote_port, ret_strings );
+    /* Uncomment these and will see additional port number info from mongoose */
+    //int ret_length = strlen( ret_strings );
+    //char content[ ret_length + 1024 ];
+    //int content_length = snprintf(content, sizeof(content),
+    //                              "Hello from mongoose! Remote port: %d, content:%s\n",
+    //                              request_info->remote_port, ret_strings );
     
     mg_printf(conn,
               "HTTP/1.1 200 OK\r\n"
@@ -87,8 +86,7 @@ static int *mongoose_callback( struct mg_connection *conn )
               "Content-Length: %d\r\n"        // Always set Content-Length
               "\r\n"
               "%s",
-              content_length, content);
-    
+              strlen(ret_strings), ret_strings);
     
     return 1;
 }
@@ -99,11 +97,17 @@ bool start_restapi_manager() {
   return true;
 }
 
-bool add_restapi_url( char *url_str, restapi_callback_func restapi_callback ){
-  url_mapping *url_mapping_data = NULL;
-  url_mapping_data = allocate_url_mapping();
-  url_mapping_data->url_pattern_key = url_str;
+bool add_restapi_url( const char *url_str, const char *method, 
+        restapi_callback_func restapi_callback ){
+
+  /* Allocate memory for url mapping data structure */
+  url_mapping *url_mapping_data = allocate_url_mapping();
+  
+  strcpy( url_mapping_data->url_pattern_key, url_str );
+  strcpy( url_mapping_data->method, method );
   url_mapping_data->restapi_requested_callback = restapi_callback;
+  
+  /* Compile the regular expression and add it in url mapping db */
   compile_url_mapping( url_mapping_data, &url_mapping_db );
   return true;
 }
@@ -117,9 +121,7 @@ bool delete_restapi_url(){
 
 bool init_restapi_manager() {
  
-  /* Prepare callbacks structure. 
-   * We have only one callback, the rest are NULL.
-   */
+  /* Prepare callbacks structure. */
   memset( &callbacks, 0, sizeof( callbacks ) );
   callbacks.begin_request = mongoose_callback;
   

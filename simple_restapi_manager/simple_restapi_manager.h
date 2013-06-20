@@ -21,32 +21,26 @@
 #ifndef SIMPLE_RESTAPI_MANAGER_H
 #define SIMPLE_RESTAPI_MANAGER_H
 
-#include "trema.h"
+#ifdef	__cplusplus
+extern "C" {
+#endif
 
-
-typedef void ( *succeeded_handler )(
-  uint64_t datapath_id,
-  const buffer *original_message,
-  void *user_data
-);
-
-
-typedef void ( *failed_handler )(
-  uint64_t datapath_id,
-  const buffer *original_message,
-  void *user_data
-);
+#include "mongoose.h"
 
 /* define REST API Callback Function Pointer */
 typedef char* ( *restapi_callback_func )( const struct mg_request_info *request_info, void *request_data );
 
 bool start_restapi_manager();
-bool add_restapi_url( char *url_str, restapi_callback_func restapi_callback );
+bool add_restapi_url( const char *url_str, const char *method, restapi_callback_func restapi_callback );
 bool delete_restapi_url();
 
 bool init_restapi_manager();
 bool finalize_restapi_manager();
 
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif // SIMPLE_RESTAPI_MANAGER_H
 

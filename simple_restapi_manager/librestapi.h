@@ -1,8 +1,20 @@
-/* 
- * File:   sflowcollector.h
- * Author: liudanny
+/*
+ * Author: TeYen Liu
  *
- * Created on February 4, 2013, 2:30 PM
+ * Copyright (C) 2013 NEC Corporation
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2, as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #ifndef SFLOWCOLLECTOR_H
@@ -12,17 +24,16 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include <sys/time.h>
-#include <setjmp.h>
 #include <regex.h>
 #include "mongoose.h"
 #include "trema.h"
 
+#define URL_PATTERN_LEN 1024
+#define METHOD_LEN 5
     
 typedef struct url_mapping {
-    char *url_pattern_key;
-    char method[5];
+    char url_pattern_key[URL_PATTERN_LEN];
+    char method[METHOD_LEN];
     regex_t regex;
     char* ( *restapi_requested_callback )( const struct mg_request_info *request_info, void *request_data );
 } url_mapping;

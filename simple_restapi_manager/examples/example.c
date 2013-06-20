@@ -29,31 +29,45 @@ handle_switch_ready( uint64_t datapath_id, void *user_data ) {
   UNUSED( user_data );
   
   info( "%#" PRIx64 " is connected.", datapath_id );
-  
-
 }
+
+/*** Define your REST API callback function here ***/
+static char *
+handle_query_test_restapi( const struct mg_request_info *request_info, void *request_data ) {
+  return "It is from test rest api...";
+}
+
+static char *
+handle_query_test2_restapi( const struct mg_request_info *request_info, void *request_data ) {
+  return "It is from test2 rest api...";
+}
+/***************************************************/
 
 
 int
 main( int argc, char *argv[] ) {
   
-  // Initialize the Trema world
+  /* Initialize the Trema world */
   init_trema( &argc, &argv );
-
-  // Init restapi manager
+  
+  /* Init restapi manager */
   init_restapi_manager();
   
-  // Start restapi manager
+  /* Start restapi manager */
   start_restapi_manager();
-  //set_external_callback( start_restapi_manager );
   
-  // Set switch ready handler
+  /*** Add your REST API ***/
+  add_restapi_url( "^/test/abc$", "GET", handle_query_test_restapi );
+  add_restapi_url( "^/test2/def$", "GET", handle_query_test2_restapi );
+  /*************************/
+  
+  /* Set switch ready handler */
   set_switch_ready_handler( handle_switch_ready, NULL );
 
-  // Main loop
+  /* Main loop */
   start_trema();
 
-  // Finalize transaction manager
+  /* Finalize transaction manager */
   finalize_restapi_manager();
 
   return 0;

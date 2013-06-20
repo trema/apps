@@ -1,8 +1,20 @@
-/* 
- * File:   libsflowcollector.c
- * Author: liudanny
+/*
+ * Author: TeYen Liu
  *
- * Created on February 4, 2013, 1:06 PM
+ * Copyright (C) 2013 NEC Corporation
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2, as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #include <sys/time.h>
@@ -15,9 +27,8 @@
 #include "librestapi.h"
 
 
-
 /**
- * Default REST API callback function
+ * This is default REST API callback function
  * @param request_info
  * @param request_data
  * @return 
@@ -51,7 +62,8 @@ lookup_url_mapping_by_match( url_mapping_table *mapping_db, char *url_key ) {
 url_mapping *
 allocate_url_mapping( void ) {
   url_mapping *ret = malloc( sizeof( url_mapping ) );
-  ret->url_pattern_key = NULL;
+  memset( ret->url_pattern_key, '\0', sizeof( ret->url_pattern_key ) );
+  memset( ret->method, '\0', sizeof( ret->method ) );
   ret->restapi_requested_callback = NULL;
   
   return ret;
@@ -95,7 +107,7 @@ delete_url_mapping_db( url_mapping_table *mapping_db ) {
   init_hash_iterator( mapping_db->url_mapping, &iter );
   while ( ( e = iterate_hash_next( &iter ) ) != NULL ) {
     void *value = delete_hash_entry( mapping_db->url_mapping, e->key );
-    // Need to free the element of hops
+    /* Need to free the element of hops */
     free( e->key );
     delete_url_mapping( mapping_db, value );
   }
@@ -109,22 +121,28 @@ void
 compile_url_mapping( url_mapping *url_mapping_data, url_mapping_table *mapping_db ){
   /* Compile the regular expression */
   int reti = regcomp( &url_mapping_data->regex, url_mapping_data->url_pattern_key, 0 );
-  if ( reti ) { error( "Cannot compile regex: %s\n", url_mapping_data->url_pattern_key ); };
+  if ( reti ) { 
+    error( "Cannot compile regex: %s\n", url_mapping_data->url_pattern_key ); 
+  };
+  
+  /* After compiling regular expression, it needs to be added in url mapping db */
   add_url_mapping( url_mapping_data->url_pattern_key, mapping_db, url_mapping_data );
 }
 
 bool
 initialize_url_mapping( url_mapping_table *mapping_db ) {
   url_mapping *url_mapping_data = NULL;
-  int reti;
   
   /* Agent with GET Method */
   url_mapping_data = allocate_url_mapping();
   
-  /* Default url */
-  url_mapping_data->url_pattern_key = "^/testing$";
+  /* Add a default url and REST API callback function */
+  strcpy( url_mapping_data->url_pattern_key, "^/testing$" );
+  strcpy( url_mapping_data->method, "GET" );
   url_mapping_data->restapi_requested_callback = process_default_callback;
   compile_url_mapping( url_mapping_data, mapping_db );
+  
+  return true;
 }
 /* ===================== End with manage url_mapping ======================== */
 
