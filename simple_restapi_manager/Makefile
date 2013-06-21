@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2011-2013 NEC Corporation
+# Copyright (C) 2013 NEC Corporation
 #
 
 TREMA = ../../trema
