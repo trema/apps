@@ -25,8 +25,6 @@
 #include "libmonitoring.h"
 
 
-
-
 // =============================== send request of port loading ===============================
 /** 
  * To request port loading info on monitoring application
@@ -34,7 +32,7 @@
 void
 send_my_port_loading_request() {
   /* Send port loading request to monitoring app */
-  send_port_loading_request( 0x00001, 1, NULL );
+  send_port_loading_request( 0xe4, 1, NULL );
 }
 // =============================== send request of port loading ===============================
 
@@ -92,6 +90,9 @@ main( int argc, char *argv[] ) {
   /* Subscribe the port and flow notification */
   add_callback_port_loading_notified( alert_port_loading, NULL );
   add_callback_flow_loading_notified( alert_flow_loading, NULL );
+  
+  init_monitoring();
+  send_monitoring_subscribe_request();
   // =============================== Monitoring Manager ===============================
   
   // Main loop
