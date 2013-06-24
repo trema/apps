@@ -625,6 +625,12 @@ init_monitoring_options( monitoring_options *options, int *argc, char **argv[] )
     new_argv[ i ] = ( *argv )[ i ];
   }
   
+  /* set default values */
+  options->flow_bit_rate_conditon = 4194304; // 4Mb per second
+  options->flow_times_condition = 2; // after 2 times, big flow will be alerted
+  options->port_setting_feature_rate = 104857600; // 100Mb per second
+  options->port_percentage_condition = 80; // port loading threshold
+  
   int c;
   uint64_t flow_bit_rate_cond = 0;
   uint16_t flow_times_cond = 0;
@@ -636,9 +642,8 @@ init_monitoring_options( monitoring_options *options, int *argc, char **argv[] )
       case 'b':
         flow_bit_rate_cond = ( uint64_t ) atoi( optarg );
         if ( flow_bit_rate_cond == 0 || flow_bit_rate_cond > UINT64_MAX ) {
-          info( "Invalid options->flow_bit_rate_conditon value.\n" );
+          info( "Invalid flow_bit_rate_conditon value.\n" );
           // Default: 4Mb per second
-          options->flow_bit_rate_conditon = 4194304; //4*1024*1024 
         } else {
           options->flow_bit_rate_conditon = flow_bit_rate_cond;
         }
@@ -647,9 +652,8 @@ init_monitoring_options( monitoring_options *options, int *argc, char **argv[] )
       case 't':
         flow_times_cond = ( uint16_t ) atoi( optarg );
         if ( flow_times_cond == 0 || flow_times_cond > UINT16_MAX ) {
-          info( "Invalid options->flow_times_condition value.\n" );
+          info( "Invalid flow_times_condition value.\n" );
           // Default: after 2 times, big flow will be alerted
-          options->flow_times_condition = 2;
         } else {
           options->flow_times_condition = flow_times_cond;
         }
@@ -658,9 +662,8 @@ init_monitoring_options( monitoring_options *options, int *argc, char **argv[] )
       case 'f':
         port_setting_feature_rt = ( uint64_t ) atoi( optarg );
         if ( port_setting_feature_rt == 0 || port_setting_feature_rt > UINT64_MAX ) {
-          info( "Invalid options->port_setting_feature_rate value.\n" );
+          info( "Invalid port_setting_feature_rate value.\n" );
           // Default: 100Mb per second
-          options->port_setting_feature_rate = 104857600;
         } else {
           options->port_setting_feature_rate = port_setting_feature_rt;
         }
@@ -669,9 +672,8 @@ init_monitoring_options( monitoring_options *options, int *argc, char **argv[] )
       case 'p':
         port_percentage_cond = ( uint16_t ) atoi( optarg );
         if ( port_percentage_cond == 0 || port_percentage_cond > UINT16_MAX ) {
-          info( "Invalid options->port_percentage_condition value.\n" );
+          info( "Invalid port_percentage_condition value.\n" );
           // Default: port loading threshold 80%
-          options->port_percentage_condition = 80;
         } else {
           options->port_percentage_condition = port_percentage_cond;
         }
@@ -703,12 +705,6 @@ init_monitoring_options( monitoring_options *options, int *argc, char **argv[] )
   *argc = argc_tmp;
   
   reset_getopt();
-  /* set default values */
-  //options->flow_bit_rate_conditon = 4194304; // 4Mb per second
-  //options->flow_times_condition = 2; // after 2 times, big flow will be alerted
-  //options->port_setting_feature_rate = 104857600; // 100Mb per second
-  //options->port_percentage_condition = 80; // port loading threshold
-  
   
   info("options->flow_bit_rate_conditon:%u", options->flow_bit_rate_conditon );
   info("options->flow_times_condition:%u", options->flow_times_condition );
