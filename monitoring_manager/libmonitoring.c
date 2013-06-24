@@ -185,9 +185,11 @@ flow_loading_notification_completed( uint16_t tag __attribute__((unused)),
           &flow_loading_info, notification->datapath_id );
   
   debug( "[flow_loading_notification_completed]" );
-  debug( "[%#016" PRIx64 "] match = %s, flow_bit_rate = %u, big_flow_flag = %s", notification->datapath_id, 
-          get_static_match_str( &flow_loading_info.match ), flow_loading_info.flow_bit_rate, 
-          flow_loading_info.big_flow_flag == false?"FALSE":"TRUE" );
+  debug( "[%#016" PRIx64 "] match = %s, flow_bit_rate = %u, big_flow_flag = %s", 
+          notification->datapath_id, 
+          get_static_match_str( &flow_loading_info.match ), 
+          flow_loading_info.flow_bit_rate, 
+          flow_loading_info.big_flow_flag == false ? "FALSE" : "TRUE" );
 }
 
 static void

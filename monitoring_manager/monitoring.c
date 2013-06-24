@@ -21,6 +21,7 @@
 
 
 #include <assert.h>
+#include <getopt.h>
 #include <inttypes.h>
 #include <netinet/in.h>
 #include "monitoring.h"
@@ -47,7 +48,7 @@ int const MY_STATS_AGING_INTERVAL = 4;
 static monitoring_switch *global_monitoring_switch;
 
 
-// ******************************** Send Notification Starts ******************************************
+// ******************************** Send Notification Starts ****************************************
 static void
 send_port_loading_notification( port_info *port, void *user_data ) {
 
@@ -235,7 +236,10 @@ send_flow_stats_request( void *user_data ) {
   match.wildcards = OFPFW_ALL; //0x3fffff
   
   buffer *flow_stat_req = create_flow_stats_request(
-    get_transaction_id(), 0 /* flags */, match, 0xff /* all tables */, OFPP_NONE /* out_port */
+    get_transaction_id(), 
+    0 /* flags */, 
+    match, 0xff /* all tables */, 
+    OFPP_NONE /* out_port */
   );
           
   for ( list_element *e = my_monitoring_switch->switches; e != NULL; e = e->next ) {
@@ -585,18 +589,34 @@ delete_monitoring_switch( monitoring_switch *my_monitoring_switch ) {
   delete_subscribers( &my_monitoring_switch->subscribers );
 }
 
+static char option_description[] =
+  "  -b, --flow_bit_rate_conditon=BitRate       The condition setting of flow bit rate\n"
+  "  -t, --flow_times_condition=FlowTimes The times of flow that reaches the flow bit rate condition\n"
+  "  -f, --port_setting_feature_rate=FeatureRate    The setting of port bandwidth\n"
+  "  -p, --port_percentage_condition=PortPercnetage    The condition setting of port loading condition\n";
+
+
+static char short_options[] = "b:t:f:p:";
+static struct option long_options[] = {
+  { "flow_bit_rate_conditon", required_argument, NULL, 'b' },
+  { "flow_times_condition", required_argument, NULL, 't' },
+  { "port_setting_feature_rate", required_argument, NULL, 'f' },
+  { "port_percentage_condition", required_argument, NULL, 'p' },
+  { NULL, 0, NULL, 0  },
+};
+
 static void
-init_switch_options( monitoring_options *options, int *argc, char **argv[] ) {
+reset_getopt() {
+  optind = 0;
+  opterr = 1;
+}
+
+static void
+init_monitoring_options( monitoring_options *options, int *argc, char **argv[] ) {
   assert( options != NULL );
   assert( argc != NULL );
   assert( *argc >= 0 );
   assert( argv != NULL );
-
-  // set default values
-  options->flow_bit_rate_conditon = 440000; // 4Mb per second
-  options->flow_times_condition = 2; // after 2 times, big flow will be alerted
-  options->port_setting_feature_rate = 104000000; // 100Mb per second
-  options->port_percentage_condition = 40;
   
   int argc_tmp = *argc;
   char *new_argv[ *argc ];
@@ -606,15 +626,101 @@ init_switch_options( monitoring_options *options, int *argc, char **argv[] ) {
   }
   
   int c;
-  uint32_t idle_timeout;
+  uint64_t flow_bit_rate_cond = 0;
+  uint16_t flow_times_cond = 0;
+  uint64_t port_setting_feature_rt = 0;
+  uint16_t port_percentage_cond = 0;
   
+  while ( ( c = getopt_long( *argc, *argv, short_options, long_options, NULL ) ) != -1 ) {
+    switch ( c ) {
+      case 'b':
+        flow_bit_rate_cond = ( uint64_t ) atoi( optarg );
+        if ( flow_bit_rate_cond == 0 || flow_bit_rate_cond > UINT64_MAX ) {
+          info( "Invalid options->flow_bit_rate_conditon value.\n" );
+          // Default: 4Mb per second
+          options->flow_bit_rate_conditon = 4194304; //4*1024*1024 
+        } else {
+          options->flow_bit_rate_conditon = flow_bit_rate_cond;
+        }
+        break;
+
+      case 't':
+        flow_times_cond = ( uint16_t ) atoi( optarg );
+        if ( flow_times_cond == 0 || flow_times_cond > UINT16_MAX ) {
+          info( "Invalid options->flow_times_condition value.\n" );
+          // Default: after 2 times, big flow will be alerted
+          options->flow_times_condition = 2;
+        } else {
+          options->flow_times_condition = flow_times_cond;
+        }
+        break;
+      
+      case 'f':
+        port_setting_feature_rt = ( uint64_t ) atoi( optarg );
+        if ( port_setting_feature_rt == 0 || port_setting_feature_rt > UINT64_MAX ) {
+          info( "Invalid options->port_setting_feature_rate value.\n" );
+          // Default: 100Mb per second
+          options->port_setting_feature_rate = 104857600;
+        } else {
+          options->port_setting_feature_rate = port_setting_feature_rt;
+        }
+        break;
+
+      case 'p':
+        port_percentage_cond = ( uint16_t ) atoi( optarg );
+        if ( port_percentage_cond == 0 || port_percentage_cond > UINT16_MAX ) {
+          info( "Invalid options->port_percentage_condition value.\n" );
+          // Default: port loading threshold 80%
+          options->port_percentage_condition = 80;
+        } else {
+          options->port_percentage_condition = port_percentage_cond;
+        }
+        break;
+        
+      default:
+        continue;
+    }
+    
+    if ( optarg == 0 || strchr( new_argv[ optind - 1 ], '=' ) != NULL ) {
+      argc_tmp -= 1;
+      new_argv[ optind - 1 ] = NULL;
+    }
+    else {
+      argc_tmp -= 2;
+      new_argv[ optind - 1 ] = NULL;
+      new_argv[ optind - 2 ] = NULL;
+    }
+  }
+  
+  for ( int i = 0, j = 0; i < *argc; ++i ) {
+    if ( new_argv[ i ] != NULL ) {
+      ( *argv )[ j ] = new_argv[ i ];
+      j++;
+    }
+  }
+
+  ( *argv )[ *argc ] = NULL;
+  *argc = argc_tmp;
+  
+  reset_getopt();
+  /* set default values */
+  //options->flow_bit_rate_conditon = 4194304; // 4Mb per second
+  //options->flow_times_condition = 2; // after 2 times, big flow will be alerted
+  //options->port_setting_feature_rate = 104857600; // 100Mb per second
+  //options->port_percentage_condition = 80; // port loading threshold
+  
+  
+  info("options->flow_bit_rate_conditon:%u", options->flow_bit_rate_conditon );
+  info("options->flow_times_condition:%u", options->flow_times_condition );
+  info("options->port_setting_feature_rate:%u", options->port_setting_feature_rate );
+  info("options->port_percentage_condition:%u", options->port_percentage_condition );
 }
 
 static void
 test_list_elements() {
     info( "[test_list_elements] runs..." );
     add_subscriber( &global_monitoring_switch->subscribers, "subscriber1-Danny" );
-    add_subscriber( &global_monitoring_switch->subscribers, "subscriber2-Minchi" );
+    add_subscriber( &global_monitoring_switch->subscribers, "subscriber2-TeYen" );
     
     for ( list_element *e = global_monitoring_switch->subscribers; e != NULL; e = e->next ) {
         char *name = e->data;
@@ -624,10 +730,12 @@ test_list_elements() {
 
 int
 main( int argc, char *argv[] ) {
-  init_trema( &argc, &argv );
-
+  
   monitoring_options options;
-  init_switch_options( &options, &argc, &argv );
+  info( "argv[argc]:%s", argv[argc-1] );
+  init_monitoring_options( &options, &argc, &argv );
+  info( "argv[argc]:%s", argv[argc-1] );
+  init_trema( &argc, &argv );
   init_topology_service_interface_options( &argc, &argv );
   monitoring_switch *my_monitoring_switch = create_monitoring_switch(get_topology_service_interface_name(), &options);
   global_monitoring_switch = my_monitoring_switch;

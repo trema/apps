@@ -1,6 +1,9 @@
 Monitoring Manager
 ==================
 
+**!!!! NOTICE !!!!**
+**THIS APPLICATION IS STILL UNDER DEVELOPMENT AND MAY NOT WORK AS EXPECTED.**
+
 What's this?
 ------------
 
@@ -9,8 +12,8 @@ based on this library to monitor port/switch loading and flow statistics.
 It has a routine job to regularly query Flow Stats and Port Stats and 
 summarize them in its data structue. When other Trema apps subscribe 
 notifications, they will receive the messages when Port Loading or Flow bit rate 
-reaches its threshold or criteria. And also, other Trema apps can request or 
-query Port Loading in any time.
+reaches its setting of threshold or criteria . And also, other Trema apps can 
+request or query Port Loading in any time.
 
 Software architecture/hierarchy is as follows:
 
