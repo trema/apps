@@ -33,13 +33,13 @@ Software architecture/hierarchy is as follows:
 
 The configuration for monitoring manager:
 * port_percentage_condition
-** The threshold of port loading percentage
+ * The threshold of port loading percentage
 * port_setting_feature_rate
-** The speed rate of port
+ * The speed rate of port
 * flow_bit_rate_conditon
-** The threshold of flow loading
+ * The threshold of flow loading
 * flow_times_condition
-** How many seconds will flow become big flow when being over the threshold of flow loading
+ * How many seconds will flow become big flow when being over the threshold of flow loading
 
 The criteria for monitoring manager to send notification
 * Port Loading Notification
