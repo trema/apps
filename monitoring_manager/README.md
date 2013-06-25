@@ -43,17 +43,17 @@ The configuration for monitoring manager:
 
 The criteria for monitoring manager to send notification
 * Port Loading Notification
-** Check port loading per 4 seconds
-** Calculate the percentage of port loading
-*** port_bit_rate = avg_rx_bytes * 8 
-*** port_loading_percentage = port_bit_rate  * 100 / port_feature_rate
-** If the port loading percentage is higer than port_percentage_condition, then it sends port loading notification
+ * Check port loading per 4 seconds
+ * Calculate the percentage of port loading
+  * port_bit_rate = avg_rx_bytes * 8 
+  * port_loading_percentage = port_bit_rate  * 100 / port_feature_rate
+ * If the port loading percentage is higer than port_percentage_condition, then it sends port loading notification
 * Flow Loading Notification
-** Check flow loading per 4 seconds
-** Calculate the flow bit rate
-*** flow_bit_rate = bytes_count * 8 / duration seconds
-** If flow_bit_rate  is bigger than flow_bit_rate_condition, then flow_times addes1
-** If flow_times is higher than flow_times_condition (exp: 3) , then it sends flow loading notification
+ * Check flow loading per 4 seconds
+ * Calculate the flow bit rate
+  * flow_bit_rate = bytes_count * 8 / duration seconds
+ * If flow_bit_rate  is bigger than flow_bit_rate_condition, then flow_times addes1
+ * If flow_times is higher than flow_times_condition (exp: 3) , then it sends flow loading notification
 
 
 How to use
