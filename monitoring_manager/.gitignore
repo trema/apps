@@ -1,0 +1,8 @@
+nbproject
+.depends
+*.o
+*.a
+monitoring
+examples/example1.o
+examples/example1
+
