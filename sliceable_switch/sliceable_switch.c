@@ -383,6 +383,25 @@ make_path( sliceable_switch *sliceable_switch, uint64_t in_datapath_id, uint16_t
 
 
 static void
+delete_flows_of( uint64_t datapath_id, uint16_t port_no ) {
+  struct ofp_match match;
+
+  memset( &match, 0, sizeof( struct ofp_match ) );
+  match.wildcards = OFPFW_ALL;
+  buffer *flow_mod = create_flow_mod( get_transaction_id(), match, get_cookie(),
+                                      OFPFC_DELETE, 0, 0, 0, 0, port_no, 0, NULL );
+  send_openflow_message( datapath_id, flow_mod );
+  free_buffer( flow_mod );
+
+  memset( &match, 0, sizeof( struct ofp_match ) );
+  match.wildcards = OFPFW_ALL;
+  match.wildcards &= ( uint32_t ) ~OFPFW_IN_PORT;
+  match.in_port = port_no;
+  teardown_path_by_match( match );
+}
+
+
+static void
 port_status_updated( void *user_data, const topology_port_status *status ) {
   assert( user_data != NULL );
   assert( status != NULL );
@@ -419,12 +438,7 @@ port_status_updated( void *user_data, const topology_port_status *status ) {
       return;
     }
     delete_port( &sliceable_switch->switches, p );
-    struct ofp_match match;
-    memset( &match, 0, sizeof( struct ofp_match ) );
-    match.wildcards = OFPFW_ALL;
-    match.wildcards &= ~OFPFW_IN_PORT;
-    match.in_port = status->port_no;
-    teardown_path_by_match( match );
+    delete_flows_of( status->dpid, status->port_no );
   }
 }
 
