@@ -26,13 +26,22 @@
 #include "timer.h"
 
 
+#ifdef TREMA_EDGE
+typedef struct ofp_desc ofp_desc;
+#define SIZE_OF_OFP_DESC sizeof( struct ofp_desc )
+typedef struct ofp_port ofp_port;
+#else
+typedef struct ofp_desc_stats ofp_desc;
+#define SIZE_OF_OFP_DESC sizeof( struct ofp_desc_stats )
+typedef struct ofp_phy_port ofp_port;
+#endif
+
+
 typedef struct {
   uint64_t datapath_id;
+  ofp_desc desc_stats;
 #ifdef TREMA_EDGE
-  struct ofp_desc desc_stats;
   list_element *port_desc;
-#else
-  struct ofp_desc_stats desc_stats;
 #endif
 } desc_entry;
 
@@ -87,11 +96,55 @@ more_requests( uint16_t flags ) {
 #endif
 
 
-#ifdef TREMA_EDGE
-#define SIZE_OF_OFP_DESC sizeof( struct ofp_desc )
-#else
-#define SIZE_OF_OFP_DESC sizeof( struct ofp_desc_stats )
-#endif
+
+static void
+display_desc( ofp_desc *desc_stats ) {
+  info( "Manufacturer description: %s", desc_stats->mfr_desc );
+  info( "Hardware description: %s", desc_stats->hw_desc );
+  info( "Software description: %s", desc_stats->sw_desc );
+  info( "Serial number: %s", desc_stats->serial_num );
+  info( "Human readable description of datapath: %s", desc_stats->dp_desc );
+}
+
+
+static void
+display_datapath_id( uint64_t datapath_id ) {
+  info( "Datapath ID: %#" PRIx64, datapath_id );
+}
+
+
+static void
+display_port( ofp_port *port ) {
+  const char *fake_output = "";
+  if ( port->port_no == OFPP_LOCAL ) {
+    fake_output = ":Local";
+  }
+  else if ( port->port_no == 0 || port->port_no > OFPP_MAX ) {
+    fake_output = ":Invalid port";
+  }
+  const char *state = "(Port up)";
+  if ( ( port->config & OFPPC_PORT_DOWN ) == OFPPC_PORT_DOWN &&
+       ( port->state & OFPPS_LINK_DOWN ) == OFPPS_LINK_DOWN ) {
+    state = "(Port down)";
+  }
+  else if ( ( port->config & OFPPC_PORT_DOWN ) == OFPPC_PORT_DOWN ) {
+    state = "(Port is administratively down)";
+  }
+  else if ( ( port->state & OFPPS_LINK_DOWN ) == OFPPS_LINK_DOWN ) {
+    state = "(No physical link present)";
+  }
+  info( "Port no: %u(0x%x%s)%s", port->port_no, port->port_no, fake_output, state );
+  info(
+    "  Hardware address: %02x:%02x:%02x:%02x:%02x:%02x",
+    port->hw_addr[ 0 ],
+    port->hw_addr[ 1 ],
+    port->hw_addr[ 2 ],
+    port->hw_addr[ 3 ],
+    port->hw_addr[ 4 ],
+    port->hw_addr[ 5 ]
+  );
+  info( "  Port name: %s", port->name );
+}
 
 
 static void
@@ -149,47 +202,14 @@ handle_port_desc_reply( uint64_t datapath_id, uint32_t transaction_id,
     return;
   }
 
-  struct ofp_desc *desc_stats = &desc->desc_stats;
-  info( "Manufacturer description: %s", desc_stats->mfr_desc );
-  info( "Hardware description: %s", desc_stats->hw_desc );
-  info( "Software description: %s", desc_stats->sw_desc );
-  info( "Serial number: %s", desc_stats->serial_num );
-  info( "Human readable description of datapath: %s", desc_stats->dp_desc );
-  info( "Datapath ID: %#" PRIx64, datapath_id );
+  display_desc( &desc->desc_stats );
+  display_datapath_id( datapath_id );
   for ( list_element *e = desc->port_desc; e != NULL; e = e->next ) {
     buffer *data = e->data;
     struct ofp_port *port = ( struct ofp_port  * ) data->data;
     size_t length = data->length;
     while ( length >= sizeof( struct ofp_port ) ) {
-      const char *fake_output = "";
-      if ( port->port_no == OFPP_LOCAL ) {
-	fake_output = ":Local";
-      }
-      else if ( port->port_no == 0 || port->port_no > OFPP_MAX ) {
-	fake_output = ":Invalid port";
-      }
-      const char *state = "(Port up)";
-      if ( ( port->config & OFPPC_PORT_DOWN ) == OFPPC_PORT_DOWN &&
-	   ( port->state & OFPPS_LINK_DOWN ) == OFPPS_LINK_DOWN ) {
-	state = "(Port down)";
-      }
-      else if ( ( port->config & OFPPC_PORT_DOWN ) == OFPPC_PORT_DOWN ) {
-	state = "(Port is administratively down)";
-      }
-      else if ( ( port->state & OFPPS_LINK_DOWN ) == OFPPS_LINK_DOWN ) {
-	state = "(No physical link present)";
-      }
-      info( "Port no: %u(0x%x%s)%s", port->port_no, port->port_no, fake_output, state );
-      info(
-	"  Hardware address: %02x:%02x:%02x:%02x:%02x:%02x",
-	port->hw_addr[ 0 ],
-	port->hw_addr[ 1 ],
-	port->hw_addr[ 2 ],
-	port->hw_addr[ 3 ],
-	port->hw_addr[ 4 ],
-	port->hw_addr[ 5 ]
-      );
-      info( "  Port name: %s", port->name );
+      display_port( port );
       length -= ( uint16_t ) sizeof( struct ofp_port );
       port++;
     }
@@ -235,47 +255,13 @@ handle_features_reply( uint64_t datapath_id, uint32_t transaction_id, uint32_t n
   if ( desc == NULL ) {
     return;
   }
-  struct ofp_desc_stats *desc_stats = &desc->desc_stats;
 
-  info( "Manufacturer description: %s", desc_stats->mfr_desc );
-  info( "Hardware description: %s", desc_stats->hw_desc );
-  info( "Software description: %s", desc_stats->sw_desc );
-  info( "Serial number: %s", desc_stats->serial_num );
-  info( "Human readable description of datapath: %s", desc_stats->dp_desc );
-  info( "Datapath ID: %#" PRIx64, datapath_id );
+  display_desc( &desc->desc_stats );
+  display_datapath_id( datapath_id );
   list_element ports_list;
   memcpy( &ports_list, phy_ports, sizeof( list_element ) );
   for ( list_element *port = &ports_list; port != NULL; port = port->next ) {
-    struct ofp_phy_port *phy_port = port->data;
-    const char *fake_output = "";
-    if ( phy_port->port_no == OFPP_LOCAL ) {
-      fake_output = ":Local";
-    }
-    else if ( phy_port->port_no == 0 || phy_port->port_no > OFPP_MAX ) {
-      fake_output = ":Invalid port";
-    }
-    const char *state = "(Port up)";
-    if ( ( phy_port->config & OFPPC_PORT_DOWN ) == OFPPC_PORT_DOWN &&
-         ( phy_port->state & OFPPS_LINK_DOWN ) == OFPPS_LINK_DOWN ) {
-      state = "(Port down)";
-    }
-    else if ( ( phy_port->config & OFPPC_PORT_DOWN ) == OFPPC_PORT_DOWN ) {
-      state = "(Port is administratively down)";
-    }
-    else if ( ( phy_port->state & OFPPS_LINK_DOWN ) == OFPPS_LINK_DOWN ) {
-      state = "(No physical link present)";
-    }
-    info( "Port no: %u(0x%x%s)%s", phy_port->port_no, phy_port->port_no, fake_output, state );
-    info(
-      "  Hardware address: %02x:%02x:%02x:%02x:%02x:%02x",
-      phy_port->hw_addr[ 0 ],
-      phy_port->hw_addr[ 1 ],
-      phy_port->hw_addr[ 2 ],
-      phy_port->hw_addr[ 3 ],
-      phy_port->hw_addr[ 4 ],
-      phy_port->hw_addr[ 5 ]
-    );
-    info( "  Port name: %s", phy_port->name );
+    display_port( port->data );
   }
 
   delete_hash_entry( show_desc->db, &datapath_id );
