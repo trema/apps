@@ -80,7 +80,7 @@ dump_flow_stats( uint64_t datapath_id, struct ofp_flow_stats *stats ) {
 
   info( "[%#016" PRIx64 "] table_id = %u, priority = %u, cookie = %#" PRIx64 ", idle_timeout = %u, "
         " hard_timeout = %u, duration = %u.%09u, packet_count = %" PRIu64 ", byte_count = %" PRIu64
-        ", match = [%s], actions = [%s]",
+        ", match = [%s], instructions = [%s]",
         datapath_id, stats->table_id, stats->priority, stats->cookie, stats->idle_timeout,
         stats->hard_timeout, stats->duration_sec, stats->duration_nsec, stats->packet_count, stats->byte_count,
         match_str, inst_str );
