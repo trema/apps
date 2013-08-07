@@ -20,76 +20,12 @@
 #endif
 
 #include "trema.h"
+#include "datapath_db.h"
 #include "fdb.h"
 #include "flow_entry.h"
 
 
-typedef struct {
-  uint64_t datapath_id;
-  hash_table *fdb;
-} switch_entry;
-
-
-static switch_entry *
-allocate_switch_entry( uint64_t datapath_id ) {
-  switch_entry *entry = xmalloc( sizeof( switch_entry ) );
-  entry->datapath_id = datapath_id;
-  entry->fdb = create_fdb();
-  return entry;
-}
-
-
-static void
-free_switch_entry( switch_entry *entry ) {
-  delete_fdb( entry->fdb );
-  xfree( entry );
-}
-
-
-static hash_table *
-create_switch( void ) {
-  return create_hash( compare_datapath_id, hash_datapath_id );
-}
-
-
-static void
-insert_switch_entry( hash_table *db, uint64_t datapath_id ) {
-    switch_entry *entry = allocate_switch_entry( datapath_id );
-    switch_entry *old_switch = insert_hash_entry( db, &entry->datapath_id, entry );
-    if ( old_switch != NULL ) {
-      warn( "duplicated switch ( datapath_id = %#" PRIx64 ", entry = %p )", datapath_id, old_switch );
-      free_switch_entry( old_switch );
-    }
-    debug( "insert switch: %#" PRIx64 " ( entry = %p )", datapath_id, entry );
-}
-
-
-static switch_entry *
-lookup_switch_entry( hash_table *db, uint64_t datapath_id ) {
-  switch_entry *entry = lookup_hash_entry( db, &datapath_id );
-  debug( "lookup switch: %#" PRIx64 " ( entry = %p )", datapath_id, entry );
-  return entry;
-}
-
-
-static void
-delete_switch_entry( hash_table *db, uint64_t datapath_id ) {
-  switch_entry *entry = delete_hash_entry( db, &datapath_id );
-  free_switch_entry( entry );
-  debug( "delete switch: %#" PRIx64 " ( entry = %p )", datapath_id, entry );
-}
-
-
-static void
-delete_switch( hash_table *db ) {
-  hash_iterator iter;
-  init_hash_iterator( db, &iter );
-  hash_entry *e;
-  while ( ( e = iterate_hash_next( &iter ) ) != NULL ) {
-    free_switch_entry( e->value );
-  }
-  delete_hash( db );
-}
+#define LOOP_GUARD 5
 
 
 static void
@@ -117,9 +53,9 @@ send_packet( uint64_t datapath_id, uint32_t out_port, packet_in message, uint32_
 static void
 handle_packet_in( uint64_t datapath_id, packet_in message ) {
   hash_table *db = message.user_data;
-  switch_entry *entry = lookup_switch_entry( db, datapath_id );
-  if ( entry == NULL ) {
-    error( "switch entry is not initialized yet." );
+  hash_table *fdb = lookup_datapath_entry( db, datapath_id );
+  if ( fdb == NULL ) {
+    error( "datapath is not initialized yet." );
     return;
   }
 
@@ -137,28 +73,46 @@ handle_packet_in( uint64_t datapath_id, packet_in message ) {
     error( "in_port missing in oxm-matches" );
     return;
   }
-
   packet_info packet_info = get_packet_info( message.data );
-  uint32_t old_port_number = learn_fdb( entry->fdb, packet_info.eth_macsa, in_port );
-  if ( old_port_number != ENTRY_NOT_FOUND_IN_FDB ) {
-    delete_input_flow_entry( packet_info.eth_macsa, datapath_id, old_port_number );
-    delete_output_flow_entry( packet_info.eth_macsa, datapath_id, old_port_number );
+
+  time_t updated_at = 0;
+  uint32_t old_in_port = lookup_fdb( fdb, packet_info.eth_macsa, &updated_at );
+  uint32_t out_port = lookup_fdb( fdb, packet_info.eth_macda, NULL );
+
+  char macsa_str[ MAC_STRING_LENGTH ], macda_str[ MAC_STRING_LENGTH ];
+  mac_to_string( packet_info.eth_macsa, macsa_str, sizeof( macsa_str ) );
+  mac_to_string( packet_info.eth_macda, macda_str, sizeof( macda_str ) );
+
+  time_t now = time( NULL );
+  debug( "handle_packet_in: datapath id = %#" PRIx64 ", macsa = %s, old in port = %u, "
+         "in port = %u, macda = %s, out port = %u, updated_at = %" PRId64 " now = %" PRId64,
+         datapath_id, macsa_str, old_in_port, in_port,
+	 macda_str, out_port, ( uint64_t ) updated_at, ( uint64_t ) now );
+
+  if ( old_in_port != ENTRY_NOT_FOUND_IN_FDB && old_in_port != in_port &&
+       out_port == ENTRY_NOT_FOUND_IN_FDB &&
+       updated_at + LOOP_GUARD > now ) {
+    warn( "loop maybe: datapath id = %#" PRIx64 ", macsa = %s, old in port = %u, "
+          "in port = %u, macda = %s, out port = %u",
+          datapath_id, macsa_str, old_in_port, in_port, macda_str, out_port );
+    return;
+  }
+  update_fdb( fdb, packet_info.eth_macsa, in_port );
+  if ( old_in_port != in_port ) {
+    delete_input_flow_entry( packet_info.eth_macsa, datapath_id, old_in_port );
+    delete_output_flow_entry( packet_info.eth_macsa, datapath_id, old_in_port );
   }
   if ( message.table_id == INPUT_TABLE_ID ) {
     insert_input_flow_entry( packet_info.eth_macsa, datapath_id, in_port );
-    insert_output_flow_entry( packet_info.eth_macsa, datapath_id, in_port );
+    insert_output_flow_entry( packet_info.eth_macsa, datapath_id, in_port ); // need?
   }
-
-  uint32_t out_port = lookup_fdb( entry->fdb, packet_info.eth_macda );
   if ( out_port == ENTRY_NOT_FOUND_IN_FDB ) {
     out_port = OFPP_ALL;
   }
   else {
     insert_output_flow_entry( packet_info.eth_macda, datapath_id, out_port );
   }
-  char macsa_str[ 20 ], macda_str[ 20 ];
-  mac_to_string( packet_info.eth_macsa, macsa_str, sizeof( macsa_str ) );
-  mac_to_string( packet_info.eth_macda, macda_str, sizeof( macda_str ) );
+
   info( "send_packet: %#" PRIx64 " %s ( in port = %u ) -> %s ( out port = %u )",
         datapath_id, macsa_str, in_port, macda_str, out_port );
   send_packet( datapath_id, out_port, message, in_port );
@@ -170,26 +124,26 @@ handle_port_status( uint64_t datapath_id, uint32_t transaction_id,
                     uint8_t reason, struct ofp_port desc, void *user_data ) {
   UNUSED( transaction_id );
   hash_table *db = user_data;
-  switch_entry *entry = lookup_switch_entry( db, datapath_id );
-  if ( entry == NULL ) {
-    error( "switch entry is not initialized yet." );
+  hash_table *fdb = lookup_datapath_entry( db, datapath_id );
+  if ( fdb == NULL ) {
+    error( "datapath is not initialized yet." );
     return;
   }
 
-  bool delete_fdb = false;
+  bool delete_forwarding_entry = false;
   switch ( reason ) {
     case OFPPR_DELETE:
-      delete_fdb = true;
+      delete_forwarding_entry = true;
       break;
     case OFPPR_MODIFY:
       if ( ( desc.config & OFPPC_PORT_DOWN ) == OFPPC_PORT_DOWN ||
            ( desc.state & OFPPS_LINK_DOWN ) == OFPPS_LINK_DOWN ) {
-        delete_fdb = true;
+        delete_forwarding_entry = true;
       }
       break;
   }
-  if ( delete_fdb ) {
-    delete_fdb_entries( entry->fdb, desc.port_no );
+  if ( delete_forwarding_entry ) {
+    delete_forwarding_entries_by_port_number( fdb, desc.port_no );
     delete_input_flow_entry_by_inport( datapath_id, desc.port_no );
     delete_output_flow_entry_by_outport( datapath_id, desc.port_no );
   }
@@ -200,7 +154,7 @@ static void
 handle_switch_ready( uint64_t datapath_id, void *user_data ) {
   hash_table *db = user_data;
 
-  insert_switch_entry( db, datapath_id );
+  insert_datapath_entry( db, datapath_id, create_fdb(), delete_fdb );
   insert_output_table_miss_flow_entry( datapath_id );
   insert_input_table_miss_flow_entry( datapath_id );
 }
@@ -210,7 +164,7 @@ static void
 handle_switch_disconnected( uint64_t datapath_id, void *user_data ) {
   hash_table *db = user_data;
 
-  delete_switch_entry( db, datapath_id );
+  delete_datapath_entry( db, datapath_id );
 }
 
 
@@ -218,13 +172,7 @@ static void
 handle_periodic_event( void *user_data ) {
   hash_table *db = user_data;
 
-  hash_iterator iter;
-  init_hash_iterator( db, &iter );
-  hash_entry *e;
-  while ( ( e = iterate_hash_next( &iter ) ) != NULL ) {
-    switch_entry *entry = e->value;
-    delete_expired_fdb_entries( entry->fdb );
-  }
+  foreach_datapath_db( db, delete_aged_forwarding_entries );
 }
 
 
@@ -235,7 +183,7 @@ int
 main( int argc, char *argv[] ) {
   init_trema( &argc, &argv );
 
-  hash_table *db = create_switch();
+  hash_table *db = create_datapath_db();
 
   add_periodic_event_callback( PERIODIC_INTERVAL, handle_periodic_event, db );
   set_packet_in_handler( handle_packet_in, db );
@@ -246,7 +194,7 @@ main( int argc, char *argv[] ) {
 
   start_trema();
 
-  delete_switch( db );
+  delete_datapath_db( db );
 
   return 0;
 }

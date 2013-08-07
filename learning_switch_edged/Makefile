@@ -11,7 +11,7 @@ CFLAGS = $(shell $(TREMA_CONFIG) --cflags) -std=gnu99 -D_GNU_SOURCE -g -Wall
 LDFLAGS = $(shell $(TREMA_CONFIG) --libs)
 
 TARGET = learning_switch
-SRCS = learning_switch.c fdb.c flow_entry.c
+SRCS = learning_switch.c datapath_db.c fdb.c flow_entry.c
 OBJS = $(SRCS:.c=.o)
 
 DEPENDS = .depends

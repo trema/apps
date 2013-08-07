@@ -16,27 +16,21 @@
  */
 
 
-#ifndef FDB_H
-#define FDB_H
+#ifndef DATAPATH_DB_H
+#define DATAPATH_DB_H
 
 #include "trema.h"
+#include "fdb.h"
 
 
-#define MAX_AGE 300
-#define ENTRY_NOT_FOUND_IN_FDB 0
-#define MAC_STRING_LENGTH 18
+hash_table *create_datapath_db( void );
+void insert_datapath_entry( hash_table *db, uint64_t datapath_id, hash_table *fdb, void delete_fdb( hash_table *fdb ) );
+hash_table *lookup_datapath_entry( hash_table *db, uint64_t datapath_id );
+void delete_datapath_entry( hash_table *db, uint64_t datapath_id );
+void delete_datapath_db( hash_table *db );
+void foreach_datapath_db( hash_table *db, void function( hash_table *fdb ) );
 
-
-bool mac_to_string( const uint8_t *mac, char *str, size_t size );
-hash_table *create_fdb( void );
-uint32_t lookup_fdb( hash_table *db, const uint8_t *mac, time_t *updated_at );
-void update_fdb( hash_table *db, const uint8_t *mac, uint32_t port_number );
-void delete_forwarding_entries_by_port_number( hash_table *db, uint32_t port_number );
-void delete_aged_forwarding_entries( hash_table *db );
-void delete_fdb( hash_table *db );
-
-
-#endif // FDB_H
+#endif // DATAPATH_DB_H
 
 
 /*
