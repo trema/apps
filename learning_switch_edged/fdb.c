@@ -23,6 +23,7 @@
 typedef struct {
   uint8_t mac[ ETH_ADDRLEN ];
   uint32_t port_number;
+  time_t created_at;
   time_t updated_at;
 } forwarding_entry;
 
@@ -45,7 +46,8 @@ allocate_forwarding_entry( const uint8_t *mac, uint32_t port_number ) {
   forwarding_entry *entry = xmalloc( sizeof( forwarding_entry ) );
   memcpy( entry->mac, mac, ETH_ADDRLEN );
   entry->port_number = port_number;
-  entry->updated_at = time( NULL );
+  entry->created_at = time( NULL );
+  entry->updated_at = entry->created_at;
 
   return entry;
 }
@@ -54,6 +56,13 @@ allocate_forwarding_entry( const uint8_t *mac, uint32_t port_number ) {
 static void
 update_forwarding_entry( forwarding_entry *entry, uint32_t port_number ) {
   entry->port_number = port_number;
+  entry->created_at = time( NULL );
+  entry->updated_at = entry->created_at;
+}
+
+
+static void
+update_forwarding_entry_timestamp( forwarding_entry *entry ) {
   entry->updated_at = time( NULL );
 }
 
@@ -130,12 +139,14 @@ update_fdb( hash_table *db, const uint8_t *mac, uint32_t port_number ) {
     debug( "learn fdb: %s -> %u ( old port number = %u, entry = %p )", mac_str, port_number, old_port_number, entry );
     update_forwarding_entry( entry, port_number );
   }
+  else {
+    update_forwarding_entry_timestamp( entry );
+  }
 }
 
 
 typedef struct {
   hash_table *db;
-
   uint32_t port_number;
   time_t time;
 } fdb_select;

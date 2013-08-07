@@ -84,9 +84,9 @@ handle_packet_in( uint64_t datapath_id, packet_in message ) {
   mac_to_string( packet_info.eth_macda, macda_str, sizeof( macda_str ) );
 
   time_t now = time( NULL );
-  debug( "handle_packet_in: datapath id = %#" PRIx64 ", macsa = %s, old in port = %u, "
+  debug( "handle_packet_in: table id = %u, datapath id = %#" PRIx64 ", macsa = %s, old in port = %u, "
          "in port = %u, macda = %s, out port = %u, updated_at = %" PRId64 " now = %" PRId64,
-         datapath_id, macsa_str, old_in_port, in_port,
+         message.table_id, datapath_id, macsa_str, old_in_port, in_port,
 	 macda_str, out_port, ( uint64_t ) updated_at, ( uint64_t ) now );
 
   if ( old_in_port != ENTRY_NOT_FOUND_IN_FDB && old_in_port != in_port &&
@@ -103,18 +103,24 @@ handle_packet_in( uint64_t datapath_id, packet_in message ) {
     delete_output_flow_entry( packet_info.eth_macsa, datapath_id, old_in_port );
   }
   if ( message.table_id == INPUT_TABLE_ID ) {
+    debug( "install input flow entry ( macsa = %s, datapath id = %#" PRIx64 ", in port = %u",
+           macsa_str, datapath_id, in_port );
     insert_input_flow_entry( packet_info.eth_macsa, datapath_id, in_port );
+    debug( "install output flow entry ( macda = %s, datapath id = %#" PRIx64 ", out port = %u",
+           macsa_str, datapath_id, in_port );
     insert_output_flow_entry( packet_info.eth_macsa, datapath_id, in_port ); // need?
   }
   if ( out_port == ENTRY_NOT_FOUND_IN_FDB ) {
     out_port = OFPP_ALL;
   }
   else {
+    debug( "re-install output flow entry ( macda = %s, datapath id = %#" PRIx64 ", out port = %u",
+           macda_str, datapath_id, out_port );
     insert_output_flow_entry( packet_info.eth_macda, datapath_id, out_port );
   }
 
-  info( "send_packet: %#" PRIx64 " %s ( in port = %u ) -> %s ( out port = %u )",
-        datapath_id, macsa_str, in_port, macda_str, out_port );
+  debug( "send_packet: %#" PRIx64 " %s ( in port = %u ) -> %s ( out port = %u )",
+         datapath_id, macsa_str, in_port, macda_str, out_port );
   send_packet( datapath_id, out_port, message, in_port );
 }
 
