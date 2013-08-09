@@ -23,18 +23,16 @@
 
 
 #define INPUT_TABLE_ID 0
-#define OUTPUT_TABLE_ID 1
+#define OUTPUT_TABLE_ID 3
 
 
-void insert_output_flow_entry( uint8_t mac[ OFP_ETH_ALEN ], uint64_t datapath_id, uint32_t port_no );
-void delete_output_flow_entry( uint8_t mac[ OFP_ETH_ALEN ], uint64_t datapath_id, uint32_t port_no );
-void delete_output_flow_entry_by_outport( uint64_t datapath_id, uint32_t port_no );
-void insert_input_flow_entry( uint8_t mac[ OFP_ETH_ALEN ], uint64_t datapath_id, uint32_t port_no );
-void delete_input_flow_entry( uint8_t mac[ OFP_ETH_ALEN ], uint64_t datapath_id, uint32_t port_no );
-void delete_input_flow_entry_by_inport( uint64_t datapath_id, uint32_t port_no );
-void insert_output_table_miss_flow_entry( uint64_t datapath_id );
-void insert_input_table_miss_flow_entry( uint64_t datapath_id );
-
+void insert_output_flow_entry( uint8_t mac[ OFP_ETH_ALEN ], uint64_t datapath_id, uint32_t port_number );
+void delete_output_flow_entry( uint8_t mac[ OFP_ETH_ALEN ], uint64_t datapath_id, uint32_t port_number );
+void delete_output_flow_entries_by_outport( uint64_t datapath_id, uint32_t port_number );
+void insert_input_flow_entry( uint8_t mac[ OFP_ETH_ALEN ], uint64_t datapath_id, uint32_t port_number );
+void delete_input_flow_entry( uint8_t mac[ OFP_ETH_ALEN ], uint64_t datapath_id, uint32_t port_number );
+void delete_input_flow_entries_by_inport( uint64_t datapath_id, uint32_t port_number );
+void insert_table_miss_flow_entry( uint64_t datapath_id, uint8_t table_id );
 
 
 #endif // FLOW_ENTRY_H

@@ -7,7 +7,9 @@ SHELL = /bin/sh
 TREMA_CONFIG = $(TREMA)/trema-config
 
 CC = gcc
-CFLAGS = $(shell $(TREMA_CONFIG) --cflags) -std=gnu99 -D_GNU_SOURCE -g -Wall
+CFLAGS = $(shell $(TREMA_CONFIG) --cflags) -std=gnu99 -D_GNU_SOURCE -g \
+	-fno-strict-aliasing -Werror -Wall -Wextra -Wformat=2 -Wcast-qual \
+	-Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith
 LDFLAGS = $(shell $(TREMA_CONFIG) --libs)
 
 TARGET = learning_switch
@@ -16,7 +18,7 @@ OBJS = $(SRCS:.c=.o)
 
 DEPENDS = .depends
 
-.PHONY: all clean
+.PHONY: all depend clean
 
 .SUFFIXES: .c .o
 

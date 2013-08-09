@@ -20,13 +20,17 @@
 #include "flow_entry.h"
 
 
+static const uint16_t IDLE_TIMEOUT = 60;
+static const uint16_t HARD_TIMEOUT = MAX_AGE;
+
+
 static uint8_t mac_mask[ OFP_ETH_ALEN ] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
 
 static oxm_matches *
-create_oxm_matches_input( uint32_t port_no, uint8_t *mac ) {
+create_oxm_matches_input( uint32_t port_number, uint8_t *mac ) {
   oxm_matches *match = create_oxm_matches();
-  append_oxm_match_in_port( match, port_no );
+  append_oxm_match_in_port( match, port_number );
   if ( mac != NULL ) {
     append_oxm_match_eth_src( match, mac, mac_mask );
   }
@@ -44,10 +48,10 @@ create_oxm_matches_output( uint8_t *mac ) {
 
 
 void
-insert_output_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_no ) {
+insert_output_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_number ) {
   assert( mac != NULL );
   openflow_actions *actions = create_actions();
-  append_action_output( actions, port_no, OFPCML_NO_BUFFER );
+  append_action_output( actions, port_number, OFPCML_NO_BUFFER );
   openflow_instructions *insts = create_instructions();
   append_instructions_apply_actions( insts, actions );
   oxm_matches *match = create_oxm_matches_output( mac );
@@ -58,8 +62,8 @@ insert_output_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_no )
     0,
     OUTPUT_TABLE_ID,
     OFPFC_MODIFY_STRICT,
-    60,
-    MAX_AGE,
+    IDLE_TIMEOUT,
+    HARD_TIMEOUT,
     OFP_DEFAULT_PRIORITY,
     OFP_NO_BUFFER,
     0,
@@ -77,7 +81,7 @@ insert_output_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_no )
 
 
 void
-delete_output_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_no ) {
+delete_output_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_number ) {
   assert( mac != NULL );
   oxm_matches *match = create_oxm_matches_output( mac );
 
@@ -91,8 +95,8 @@ delete_output_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_no )
     0,
     OFP_DEFAULT_PRIORITY,
     OFP_NO_BUFFER,
-    port_no,
-    0,
+    port_number,
+    OFPG_ANY,
     0,
     match,
     NULL
@@ -104,19 +108,19 @@ delete_output_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_no )
 
 
 void
-delete_output_flow_entry_by_outport( uint64_t datapath_id, uint32_t port_no ) {
+delete_output_flow_entries_by_outport( uint64_t datapath_id, uint32_t port_number ) {
   buffer *flow_mod = create_flow_mod(
     get_transaction_id(),
     0,
     0,
     OUTPUT_TABLE_ID,
-    OFPFC_DELETE_STRICT,
+    OFPFC_DELETE,
     0,
     0,
     OFP_DEFAULT_PRIORITY,
     OFP_NO_BUFFER,
-    port_no,
-    0,
+    port_number,
+    OFPG_ANY,
     0,
     NULL,
     NULL
@@ -127,11 +131,11 @@ delete_output_flow_entry_by_outport( uint64_t datapath_id, uint32_t port_no ) {
 
 
 void
-insert_input_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_no ) {
+insert_input_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_number ) {
   assert( mac != NULL );
   openflow_instructions *insts = create_instructions();
   append_instructions_goto_table( insts, OUTPUT_TABLE_ID );
-  oxm_matches *match = create_oxm_matches_input( port_no, mac );
+  oxm_matches *match = create_oxm_matches_input( port_number, mac );
 
   buffer *flow_mod = create_flow_mod(
     get_transaction_id(),
@@ -139,8 +143,8 @@ insert_input_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_no ) 
     0,
     INPUT_TABLE_ID,
     OFPFC_MODIFY_STRICT,
-    60,
-    MAX_AGE,
+    IDLE_TIMEOUT,
+    HARD_TIMEOUT,
     OFP_DEFAULT_PRIORITY,
     OFP_NO_BUFFER,
     0,
@@ -157,9 +161,9 @@ insert_input_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_no ) 
 
 
 void
-delete_input_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_no ) {
+delete_input_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_number ) {
   assert( mac != NULL );
-  oxm_matches *match = create_oxm_matches_input( port_no, mac );
+  oxm_matches *match = create_oxm_matches_input( port_number, mac );
 
   buffer *flow_mod = create_flow_mod(
     get_transaction_id(),
@@ -171,8 +175,8 @@ delete_input_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_no ) 
     0,
     OFP_DEFAULT_PRIORITY,
     OFP_NO_BUFFER,
-    0,
-    0,
+    OFPP_ANY,
+    OFPG_ANY,
     0,
     match,
     NULL
@@ -184,21 +188,21 @@ delete_input_flow_entry( uint8_t *mac, uint64_t datapath_id, uint32_t port_no ) 
 
 
 void
-delete_input_flow_entry_by_inport( uint64_t datapath_id, uint32_t port_no ) {
-  oxm_matches *match = create_oxm_matches_input( port_no, NULL );
+delete_input_flow_entries_by_inport( uint64_t datapath_id, uint32_t port_number ) {
+  oxm_matches *match = create_oxm_matches_input( port_number, NULL );
 
   buffer *flow_mod = create_flow_mod(
     get_transaction_id(),
     0,
     0,
     INPUT_TABLE_ID,
-    OFPFC_DELETE_STRICT,
+    OFPFC_DELETE,
     0,
     0,
     OFP_DEFAULT_PRIORITY,
     OFP_NO_BUFFER,
-    0,
-    0,
+    OFPP_ANY,
+    OFPG_ANY,
     0,
     match,
     NULL
@@ -209,8 +213,8 @@ delete_input_flow_entry_by_inport( uint64_t datapath_id, uint32_t port_no ) {
 }
 
 
-static void
-set_table_miss_flow_entry( uint64_t datapath_id, uint8_t table_id ) {
+void
+insert_table_miss_flow_entry( uint64_t datapath_id, uint8_t table_id ) {
   openflow_actions *actions = create_actions();
   append_action_output( actions, OFPP_CONTROLLER, OFPCML_NO_BUFFER );
   openflow_instructions *insts = create_instructions();
@@ -236,18 +240,6 @@ set_table_miss_flow_entry( uint64_t datapath_id, uint8_t table_id ) {
   free_buffer( flow_mod );
   delete_instructions( insts );
   delete_actions( actions );
-}
-
-
-void
-insert_output_table_miss_flow_entry( uint64_t datapath_id ) {
-  set_table_miss_flow_entry( datapath_id, OUTPUT_TABLE_ID );
-}
-
-
-void
-insert_input_table_miss_flow_entry( uint64_t datapath_id ) {
-  set_table_miss_flow_entry( datapath_id, INPUT_TABLE_ID );
 }
 
 

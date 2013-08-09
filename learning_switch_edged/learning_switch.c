@@ -19,13 +19,11 @@
 #error "not supported"
 #endif
 
+#include <assert.h>
 #include "trema.h"
 #include "datapath_db.h"
 #include "fdb.h"
 #include "flow_entry.h"
-
-
-#define LOOP_GUARD 5
 
 
 static void
@@ -51,30 +49,25 @@ send_packet( uint64_t datapath_id, uint32_t out_port, packet_in message, uint32_
 
 
 static void
-handle_packet_in( uint64_t datapath_id, packet_in message ) {
-  hash_table *db = message.user_data;
-  hash_table *fdb = lookup_datapath_entry( db, datapath_id );
+learning_switch_increment_stat( uint64_t datapath_id, const char *key ) {
+  char str[ 1024 ];
+  int n = snprintf( str, sizeof( str ), "learning_switch.%#" PRIx64 ".%s", datapath_id, key );
+  assert( n > 0 && ( size_t ) n < sizeof( str ) );
+  increment_stat( str );
+}
+
+
+static const time_t LOOP_GUARD = 5;
+
+static void
+forwarding( hash_table *fdb, uint64_t datapath_id, packet_in message, uint32_t in_port ) {
   if ( fdb == NULL ) {
     error( "datapath is not initialized yet." );
     return;
   }
+  learning_switch_increment_stat( datapath_id, "packets_received" );
 
-  if ( message.data == NULL ) {
-    error( "data must not be NULL" );
-    return;
-  }
-  if ( !packet_type_ether( message.data ) ) {
-    error( "data must be ethernet frane" );
-    return;
-  }
-
-  uint32_t in_port = get_in_port_from_oxm_matches( message.match );
-  if ( in_port == 0 ) {
-    error( "in_port missing in oxm-matches" );
-    return;
-  }
   packet_info packet_info = get_packet_info( message.data );
-
   time_t updated_at = 0;
   uint32_t old_in_port = lookup_fdb( fdb, packet_info.eth_macsa, &updated_at );
   uint32_t out_port = lookup_fdb( fdb, packet_info.eth_macda, NULL );
@@ -83,9 +76,10 @@ handle_packet_in( uint64_t datapath_id, packet_in message ) {
   mac_to_string( packet_info.eth_macsa, macsa_str, sizeof( macsa_str ) );
   mac_to_string( packet_info.eth_macda, macda_str, sizeof( macda_str ) );
 
+  // loop check
   time_t now = time( NULL );
-  debug( "handle_packet_in: table id = %u, datapath id = %#" PRIx64 ", macsa = %s, old in port = %u, "
-         "in port = %u, macda = %s, out port = %u, updated_at = %" PRId64 " now = %" PRId64,
+  debug( "forwarding: table id = %u, datapath id = %#" PRIx64 ", macsa = %s, old in port = %u, "
+         "in port = %u, macda = %s, out port = %u, updated_at = %" PRId64 ", now = %" PRId64,
          message.table_id, datapath_id, macsa_str, old_in_port, in_port,
 	 macda_str, out_port, ( uint64_t ) updated_at, ( uint64_t ) now );
 
@@ -93,35 +87,87 @@ handle_packet_in( uint64_t datapath_id, packet_in message ) {
        out_port == ENTRY_NOT_FOUND_IN_FDB &&
        updated_at + LOOP_GUARD > now ) {
     warn( "loop maybe: datapath id = %#" PRIx64 ", macsa = %s, old in port = %u, "
-          "in port = %u, macda = %s, out port = %u",
-          datapath_id, macsa_str, old_in_port, in_port, macda_str, out_port );
+          "in port = %u, macda = %s",
+          datapath_id, macsa_str, old_in_port, in_port, macda_str );
+    learning_switch_increment_stat( datapath_id, "packets_discarded" );
     return;
   }
+
+  // mac address learning
   update_fdb( fdb, packet_info.eth_macsa, in_port );
+
+  // set of flow entries
   if ( old_in_port != in_port ) {
     delete_input_flow_entry( packet_info.eth_macsa, datapath_id, old_in_port );
     delete_output_flow_entry( packet_info.eth_macsa, datapath_id, old_in_port );
   }
   if ( message.table_id == INPUT_TABLE_ID ) {
-    debug( "install input flow entry ( macsa = %s, datapath id = %#" PRIx64 ", in port = %u",
+    debug( "insert input flow entry ( reactive, macsa = %s, datapath id = %#" PRIx64 ", in port = %u",
            macsa_str, datapath_id, in_port );
     insert_input_flow_entry( packet_info.eth_macsa, datapath_id, in_port );
-    debug( "install output flow entry ( macda = %s, datapath id = %#" PRIx64 ", out port = %u",
+    debug( "insert output flow entry ( proactive, macda = %s, datapath id = %#" PRIx64 ", out port = %u",
            macsa_str, datapath_id, in_port );
-    insert_output_flow_entry( packet_info.eth_macsa, datapath_id, in_port ); // need?
+    insert_output_flow_entry( packet_info.eth_macsa, datapath_id, in_port );
   }
-  if ( out_port == ENTRY_NOT_FOUND_IN_FDB ) {
-    out_port = OFPP_ALL;
-  }
-  else {
-    debug( "re-install output flow entry ( macda = %s, datapath id = %#" PRIx64 ", out port = %u",
+  if ( out_port != ENTRY_NOT_FOUND_IN_FDB ) {
+    debug( "insert output flow entry ( %s, macda = %s, datapath id = %#" PRIx64 ", out port = %u",
+           ( message.table_id == OUTPUT_TABLE_ID ? "reactive" : "just in case"),
            macda_str, datapath_id, out_port );
     insert_output_flow_entry( packet_info.eth_macda, datapath_id, out_port );
   }
 
+  // send a packet
+  if ( out_port == ENTRY_NOT_FOUND_IN_FDB ) {
+    out_port = OFPP_ALL;
+    learning_switch_increment_stat( datapath_id, "broadcast_forwarding" );
+  }
+  else {
+    learning_switch_increment_stat( datapath_id, "unicast_forwarding" );
+  }
   debug( "send_packet: %#" PRIx64 " %s ( in port = %u ) -> %s ( out port = %u )",
          datapath_id, macsa_str, in_port, macda_str, out_port );
   send_packet( datapath_id, out_port, message, in_port );
+}
+
+
+static void
+delete_forwarding_entries( hash_table *fdb, uint64_t datapath_id, uint32_t port_number ) {
+  if ( fdb == NULL ) {
+    error( "datapath is not initialized yet." );
+    return;
+  }
+
+  delete_forwarding_entries_by_port_number( fdb, port_number );
+  delete_input_flow_entries_by_inport( datapath_id, port_number );
+  delete_output_flow_entries_by_outport( datapath_id, port_number );
+}
+
+
+static void
+handle_packet_in( uint64_t datapath_id, packet_in message ) {
+  hash_table *db = message.user_data;
+
+  if ( message.data == NULL ) {
+    error( "data must not be NULL" );
+    return;
+  }
+  if ( !packet_type_ether( message.data ) ) {
+    error( "data must be ethernet frame" );
+    return;
+  }
+  if ( message.reason == OFPR_INVALID_TTL ) {
+    warn( "reason.invalid-ttl not supported ( datapath_id = %#" PRIx64 ")", datapath_id );
+    return;
+  }
+
+  uint32_t in_port = get_in_port_from_oxm_matches( message.match );
+  if ( in_port == 0 ) {
+    error( "in_port missing in oxm-matches" );
+    return;
+  }
+
+  hash_table *fdb = lookup_datapath_entry( db, datapath_id );
+  forwarding( fdb, datapath_id, message, in_port );
 }
 
 
@@ -130,29 +176,33 @@ handle_port_status( uint64_t datapath_id, uint32_t transaction_id,
                     uint8_t reason, struct ofp_port desc, void *user_data ) {
   UNUSED( transaction_id );
   hash_table *db = user_data;
-  hash_table *fdb = lookup_datapath_entry( db, datapath_id );
-  if ( fdb == NULL ) {
-    error( "datapath is not initialized yet." );
-    return;
-  }
 
-  bool delete_forwarding_entry = false;
+  hash_table *fdb = lookup_datapath_entry( db, datapath_id );
   switch ( reason ) {
-    case OFPPR_DELETE:
-      delete_forwarding_entry = true;
-      break;
-    case OFPPR_MODIFY:
-      if ( ( desc.config & OFPPC_PORT_DOWN ) == OFPPC_PORT_DOWN ||
-           ( desc.state & OFPPS_LINK_DOWN ) == OFPPS_LINK_DOWN ) {
-        delete_forwarding_entry = true;
-      }
-      break;
+  case OFPPR_DELETE:
+    delete_forwarding_entries( fdb, datapath_id, desc.port_no );
+    break;
+  case OFPPR_MODIFY:
+    if ( ( desc.config & OFPPC_PORT_DOWN ) == OFPPC_PORT_DOWN ||
+         ( desc.state & OFPPS_LINK_DOWN ) == OFPPS_LINK_DOWN ) {
+      delete_forwarding_entries( fdb, datapath_id, desc.port_no );
+    }
+    break;
   }
-  if ( delete_forwarding_entry ) {
-    delete_forwarding_entries_by_port_number( fdb, desc.port_no );
-    delete_input_flow_entry_by_inport( datapath_id, desc.port_no );
-    delete_output_flow_entry_by_outport( datapath_id, desc.port_no );
-  }
+}
+
+
+static void *
+create_datapath_data( uint64_t datapath_id ) {
+  UNUSED( datapath_id );
+  return ( void * ) create_fdb();
+}
+
+
+static void
+delete_datapath_data( void *datapath_data ) {
+  hash_table *fdb = datapath_data;
+  delete_fdb( fdb );
 }
 
 
@@ -160,9 +210,9 @@ static void
 handle_switch_ready( uint64_t datapath_id, void *user_data ) {
   hash_table *db = user_data;
 
-  insert_datapath_entry( db, datapath_id, create_fdb(), delete_fdb );
-  insert_output_table_miss_flow_entry( datapath_id );
-  insert_input_table_miss_flow_entry( datapath_id );
+  insert_datapath_entry( db, datapath_id, create_datapath_data( datapath_id ), delete_datapath_data );
+  insert_table_miss_flow_entry( datapath_id, OUTPUT_TABLE_ID );
+  insert_table_miss_flow_entry( datapath_id, INPUT_TABLE_ID );
 }
 
 
@@ -175,26 +225,29 @@ handle_switch_disconnected( uint64_t datapath_id, void *user_data ) {
 
 
 static void
-handle_periodic_event( void *user_data ) {
-  hash_table *db = user_data;
-
-  foreach_datapath_db( db, delete_aged_forwarding_entries );
+delete_aged_entries( void *datapath_data ) {
+  hash_table *fdb = datapath_data;
+  delete_aged_forwarding_entries( fdb );
 }
 
 
-static const int PERIODIC_INTERVAL = 5;
+static void
+handle_periodic_event( void *user_data ) {
+  hash_table *db = user_data;
 
+  foreach_datapath_db( db, delete_aged_entries );
+}
+
+
+static const time_t PERIODIC_INTERVAL = 5;
 
 int
 main( int argc, char *argv[] ) {
   init_trema( &argc, &argv );
-
   hash_table *db = create_datapath_db();
-
   add_periodic_event_callback( PERIODIC_INTERVAL, handle_periodic_event, db );
   set_packet_in_handler( handle_packet_in, db );
   set_port_status_handler( handle_port_status, db );
-
   set_switch_ready_handler( handle_switch_ready, db );
   set_switch_disconnected_handler( handle_switch_disconnected, db );
 

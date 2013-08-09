@@ -23,7 +23,7 @@
 
 
 #define MAX_AGE 300
-#define ENTRY_NOT_FOUND_IN_FDB 0
+#define ENTRY_NOT_FOUND_IN_FDB OFPP_ALL
 #define MAC_STRING_LENGTH 18
 
 
