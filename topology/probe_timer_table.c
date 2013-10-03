@@ -293,7 +293,7 @@ probe_request( probe_timer_entry *entry, int event, uint64_t *dpid, uint16_t por
       }
       break;
     default:
-      UNREACHABLE();
+      UNREACHABLE_CODE();
       break;
   }
 
