@@ -1,0 +1,16 @@
+language: ruby
+
+script: "rake cucumber"
+
+rvm:
+  - 1.8.7
+  - 1.9.3
+  - 2.0.0
+
+before_install:
+ - sudo apt-get update -qq
+ - sudo apt-get install libpcap-dev -qq
+ - gem install bundler
+
+notifications:
+  webhooks: http://trema-hubot.herokuapp.com/hubot/travis?room=1
