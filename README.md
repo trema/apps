@@ -2,6 +2,8 @@ What's here?
 ============
 
 [![Build Status](https://secure.travis-ci.org/trema/apps.png)](http://travis-ci.org/trema/apps)
+[![Code Climate](https://codeclimate.com/github/trema/apps.png)](https://codeclimate.com/github/trema/apps)
+[![Dependency Status](https://gemnasium.com/trema/apps.png)](https://gemnasium.com/trema/apps)
 
 This is the repository for listing OpenFlow controller applications
 developed on top of Trema. The applications are not main part of
