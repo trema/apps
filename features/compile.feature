@@ -30,6 +30,7 @@ Feature: C apps compiles with the latest trema
     When I cd to "../load_balance_switch"
     Then I successfully run `make`
 
+  @wip
   Scenario: compile monitoring_manager
     When I cd to "monitoring_manager"
     Then I successfully run `make`
