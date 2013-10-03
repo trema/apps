@@ -1,6 +1,8 @@
 What's here?
 ============
 
+[![Build Status](https://secure.travis-ci.org/trema/apps.png)](http://travis-ci.org/trema/apps)
+
 This is the repository for listing OpenFlow controller applications
 developed on top of Trema. The applications are not main part of
 Trema framework but still you can refer to them as examples or
