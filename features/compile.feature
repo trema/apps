@@ -1,7 +1,9 @@
 Feature: C apps compiles with the latest trema
 
   Scenario: compile broadcast_helper
-    When I cd to "broadcast_helper"
+    Given I cd to "topology"
+    And I successfully run `make`
+    When I cd to "../broadcast_helper"
     Then I successfully run `make`
 
   Scenario: compile flow_dumper
@@ -17,16 +19,15 @@ Feature: C apps compiles with the latest trema
     When I cd to "group_dumper"
     Then I successfully run `make`
 
-  Scenario: compile learning_switch_edged
-    When I cd to "learning_switch_edged"
-    Then I successfully run `make`
-
+  @wip
   Scenario: compile learning_switch_edged
     When I cd to "learning_switch_edged"
     Then I successfully run `make`
 
   Scenario: compile load_balance_switch
-    When I cd to "load_balance_switch"
+    Given I cd to "topology"
+    And I successfully run `make`
+    When I cd to "../load_balance_switch"
     Then I successfully run `make`
 
   Scenario: compile monitoring_manager
@@ -42,11 +43,15 @@ Feature: C apps compiles with the latest trema
     Then I successfully run `make`
 
   Scenario: compile redirectable_routing_switch
-    When I cd to "redirectable_routing_switch"
+    Given I cd to "topology"
+    And I successfully run `make`
+    When I cd to "../redirectable_routing_switch"
     Then I successfully run `make`
 
   Scenario: compile routing_switch
-    When I cd to "routing_switch"
+    Given I cd to "topology"
+    And I successfully run `make`
+    When I cd to "../routing_switch"
     Then I successfully run `make`
 
   Scenario: compile show_description
@@ -63,7 +68,9 @@ Feature: C apps compiles with the latest trema
     Then I successfully run `make`
 
   Scenario: compile sliceable_switch
-    When I cd to "sliceable_switch"
+    Given I cd to "topology"
+    And I successfully run `make`
+    When I cd to "../sliceable_switch"
     Then I successfully run `make`
 
   Scenario: compile topology
