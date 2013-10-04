@@ -14,7 +14,7 @@ ifeq ($(TREMA_CONFIG),)
 endif
 
 CFLAGS = $(shell $(TREMA_CONFIG) --cflags) -std=gnu99 -D_GNU_SOURCE -g -fno-strict-aliasing -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith -I. -I..
-LDFLAGS = -L/var/lib/gems/1.8/gems/trema-0.3.19/objects/lib -ltrema -lrt -lpthread -lsqlite3 -L.. -ltrema_restapi_manager #$(shell $(TREMA_CONFIG) --libs)
+LDFLAGS = -L.. -ltrema_restapi_manager $(shell $(TREMA_CONFIG) --libs)
 
 TARGET = example
 SRCS = example.c
