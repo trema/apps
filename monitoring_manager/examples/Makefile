@@ -3,13 +3,19 @@
 #
 
 TREMA = ../../../trema
+SHELL = /bin/sh
+
+TREMA_CONFIG = $(shell which trema-config)
+ifeq ($(TREMA_CONFIG),)
+TREMA_CONFIG = $(TREMA)/trema-config
+endif
 
 CC = gcc
 AR = ar
 RANLIB = ranlib
 
-CFLAGS = $(shell $(TREMA)/trema-config --cflags) -std=gnu99 -D_GNU_SOURCE -g -fno-strict-aliasing -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith -I. -I..
-LDFLAGS = $(shell $(TREMA)/trema-config --libs) -L.. -lmonitoring
+CFLAGS = $(shell $(TREMA_CONFIG) --cflags) -std=gnu99 -D_GNU_SOURCE -g -fno-strict-aliasing -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wfloat-equal -Wpointer-arith -I. -I..
+LDFLAGS = $(shell $(TREMA_CONFIG) --libs) -L.. -lmonitoring
 
 SRCS_COMMON = 
 OBJS_COMMON = $(SRCS_COMMON:.c=.o)

@@ -5,12 +5,18 @@
 TREMA = ../../trema
 CC = gcc
 AR = ar
+SHELL = /bin/sh
 RANLIB = ranlib
 TREMA_APPS = ..
 
+TREMA_CONFIG = $(shell which trema-config)
+ifeq ($(TREMA_CONFIG),)
+TREMA_CONFIG = $(TREMA)/trema-config
+endif
+
 CC = gcc
-CFLAGS = $(shell $(TREMA)/trema-config --cflags) -I$(TREMA_APPS)/topology -I$(TREMA_APPS)/flow_manager -std=gnu99 -g -D_GNU_SOURCE -Wall
-LDFLAGS = $(shell $(TREMA)/trema-config --libs) -L$(TREMA_APPS)/topology -ltopology -L$(TREMA_APPS)/flow_manager -lpath
+CFLAGS = $(shell $(TREMA_CONFIG) --cflags) -I$(TREMA_APPS)/topology -I$(TREMA_APPS)/flow_manager -std=gnu99 -g -D_GNU_SOURCE -Wall
+LDFLAGS = $(shell $(TREMA_CONFIG) --libs) -L$(TREMA_APPS)/topology -ltopology -L$(TREMA_APPS)/flow_manager -lpath
 
 TARGET_MANAGER = monitoring
 SRCS_MANAGER = monitoring.c libmonitoring.c monitoring_interface.c utilmonitoring.c toolutils.c
