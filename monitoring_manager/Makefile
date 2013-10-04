@@ -19,7 +19,7 @@ OBJS_MANAGER = $(SRCS_MANAGER:.c=.o)
 TARGET_LIB = libmonitoring.a
 SRCS_LIB = libmonitoring.c monitoring_interface.c toolutils.c
 OBJS_LIB = $(SRCS_LIB:.c=.o)
-	
+
 EXAMPLES = examples
 
 TARGETS = $(TARGET_MANAGER) $(TARGET_LIB)
