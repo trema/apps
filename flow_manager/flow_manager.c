@@ -1300,7 +1300,9 @@ handle_error( uint64_t datapath_id, uint32_t transaction_id, uint16_t type, uint
       free_messenger_context_handle( group->context_handle );
       group->context_handle = NULL;
 
+      int current_state = group->state;
       remove_flow_entries_from_switches( group );
+      group->state = current_state;
       update_flow_entry_group_state( group, INSTALL_FAILED );
     }
     break;
