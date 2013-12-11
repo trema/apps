@@ -288,7 +288,7 @@ discard_packet_in( uint64_t datapath_id, uint16_t in_port, const buffer *packet,
   char match_str[ 1024 ];
   match_to_string( &match, match_str, sizeof( match_str ) );
 
-  const uint16_t idle_timeout = 0;
+  const uint16_t idle_timeout = FLOW_TIMER;
   const uint32_t buffer_id = UINT32_MAX;
   const uint16_t flags = 0;
 
