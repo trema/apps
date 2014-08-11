@@ -59,6 +59,38 @@ instruction shows how to configure the interface.
 Note that the following instruction is only valid for Ubuntu Linux
 or Debian GNU/Linux.
 
+There are several ways to enable REST-based interface.
+
+* **CGI with Apache HTTP server**
+  * The sample apache config file is for apache 2.2. It doesn't work with apache 2.4 (shipped with Ubuntu 14.04).
+* **PSGI/Plack application**
+  * It works with Ubuntu 14.04 environment, but it is less tested compared to **CGI with Apache HTTP server**.
+
+### PSGI/Plack application
+
+  Install required software packages
+  
+        $ sudo apt-get install libplack-perl libjson-perl
+
+  The above is an example on Ubuntu 14.04.
+  If `libplack-perl` is not provided, please install `Plack` from CPAN.
+  
+        $ sudo cpan install Plack
+
+  Create configuration database (if you have not created yet)
+
+        $ ./create_tables.sh
+
+  Start REST-API server
+  
+        $ plackup -r -p 8888 restapi.psg
+        
+  Run sliceable switch with REST-based interface
+
+        $ sudo trema run -c ./sliceable_switch_rest_null.conf
+
+### CGI with Apache HTTP server
+
   Install required software packages
 
         $ sudo apt-get install apache2-mpm-prefork libjson-perl
