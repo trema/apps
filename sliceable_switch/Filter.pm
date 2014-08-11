@@ -132,14 +132,14 @@ sub add_filter(){
 	}
     }
 
-    if(defined($ofp_wildcards) && oct($ofp_wildcards) eq 'NaN'){
+    if(defined($ofp_wildcards) && hex($ofp_wildcards) eq 'NaN'){
 	$ofp_wildcards = string_to_ofp_wildcards($ofp_wildcards);
     }
     elsif(!defined($ofp_wildcards)){
 	$ofp_wildcards = 0;
     }
 
-    if(defined($wildcards) && oct($wildcards) eq 'NaN'){
+    if(defined($wildcards) && hex($wildcards) eq 'NaN'){
 	$wildcards = string_to_wildcards($wildcards);
     }
     elsif(!defined($wildcards)){
@@ -157,13 +157,13 @@ sub add_filter(){
 	$nw_src = ip_string_to_int($nw_src);
     }
     else{
-	$nw_src = oct($nw_src);
+	$nw_src = hex($nw_src);
     }
     if(defined($nw_dst) && $nw_dst =~ /\./){
 	$nw_dst = ip_string_to_int($nw_dst);
     }
     else{
-	$nw_dst = oct($nw_dst);
+	$nw_dst = hex($nw_dst);
     }
 
     my $ret = $self->{'dbh'}->do("INSERT INTO filter values ($priority,$ofp_wildcards," .
@@ -240,7 +240,7 @@ sub delete_filters(){
 	    $nw_src = ip_string_to_int($nw_src);
 	}
 	else{
-	    $nw_src = oct($nw_src);
+	    $nw_src = hex($nw_src);
 	}
 	$statement .= $prefix . " nw_src = $nw_src";
 	$prefix = " AND"
@@ -250,7 +250,7 @@ sub delete_filters(){
 	    $nw_dst = ip_string_to_int($nw_dst);
 	}
 	else{
-	    $nw_dst = oct($nw_dst);
+	    $nw_dst = hex($nw_dst);
 	}
 	$statement .= $prefix . " nw_dst = $nw_dst";
 	$prefix = " AND"
