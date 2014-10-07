@@ -28,7 +28,7 @@
 #include "filter.h"
 
 
-#define FILTER_DB_UPDATE_INTERVAL 30
+#define FILTER_DB_UPDATE_INTERVAL 5
 
 
 typedef struct {
