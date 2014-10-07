@@ -31,7 +31,7 @@
 #include "filter.h"
 
 
-#define SLICE_DB_UPDATE_INTERVAL 30
+#define SLICE_DB_UPDATE_INTERVAL 5
 
 #define BINDING_AGING_INTERVAL 60
 #define BINDING_TIMEOUT 3600
