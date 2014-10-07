@@ -94,6 +94,9 @@ static int *mongoose_callback( struct mg_connection *conn )
 bool start_restapi_manager() {
   /* Start mongoose web server */
   ctx = mg_start(&callbacks, NULL, options);
+  if( ctx == NULL ){ 
+    return false;
+  }
   return true;
 }
 
